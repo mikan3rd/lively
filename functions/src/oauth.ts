@@ -1,32 +1,14 @@
-import * as crypto from "crypto";
-
 import { InstallProvider } from "@slack/oauth";
 
 import { CONFIG } from "./firebase/config";
-import { FieldValue, SlackOAuth, SlackOAuthDB, SlackOAuthState, SlackOAuthStateDB } from "./firebase/firestore";
+import { FieldValue, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
 
 const installer = new InstallProvider({
   clientId: CONFIG.slack.client_id,
   clientSecret: CONFIG.slack.client_secret,
+  stateSecret: CONFIG.slack.state_secret,
   authVersion: "v2",
-  stateStore: {
-    generateStateParam: async (installUrlOptions, date) => {
-      const state = crypto.randomBytes(20).toString("hex");
-      const data: SlackOAuthState = {
-        installUrlOptions,
-        updatedAt: FieldValue.serverTimestamp(),
-        createdAt: FieldValue.serverTimestamp(),
-      };
-      await SlackOAuthStateDB.doc(state).set(data);
-      return state;
-    },
-    verifyStateParam: async (date, state) => {
-      const SlackOAuthStateDoc = await SlackOAuthStateDB.doc(state).get();
-      const data = SlackOAuthStateDoc.data() as SlackOAuthState;
-      return data.installUrlOptions;
-    },
-  },
   installationStore: {
     storeInstallation: async (installation) => {
       const data: SlackOAuth = {
