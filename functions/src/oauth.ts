@@ -1,37 +1,45 @@
 import * as crypto from "crypto";
 
-import { InstallProvider, InstallURLOptions, Installation } from "@slack/oauth";
+import { InstallProvider } from "@slack/oauth";
 
 import { CONFIG } from "./firebase/config";
-import { SlackOAuthDB, SlackOAuthStateDB } from "./firebase/firestore";
+import { FieldValue, SlackOAuth, SlackOAuthDB, SlackOAuthState, SlackOAuthStateDB } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
-
-const authVersion = "v2" as const;
 
 const installer = new InstallProvider({
   clientId: CONFIG.slack.client_id,
   clientSecret: CONFIG.slack.client_secret,
-  authVersion,
+  authVersion: "v2",
   stateStore: {
     generateStateParam: async (installUrlOptions, date) => {
       const state = crypto.randomBytes(20).toString("hex");
-      await SlackOAuthStateDB.doc(state).set(installUrlOptions);
+      const data: SlackOAuthState = {
+        installUrlOptions,
+        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+      };
+      await SlackOAuthStateDB.doc(state).set(data);
       return state;
     },
     verifyStateParam: async (date, state) => {
       const SlackOAuthStateDoc = await SlackOAuthStateDB.doc(state).get();
-      const data = SlackOAuthStateDoc.data() as InstallURLOptions;
-      return data;
+      const data = SlackOAuthStateDoc.data() as SlackOAuthState;
+      return data.installUrlOptions;
     },
   },
   installationStore: {
     storeInstallation: async (installation) => {
-      await SlackOAuthDB.doc(installation.team.id).set(installation);
+      const data: SlackOAuth = {
+        installation,
+        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
+      };
+      await SlackOAuthDB.doc(installation.team.id).set(data);
     },
     fetchInstallation: async (installQuery) => {
       const SlackOAuthDoc = await SlackOAuthDB.doc(installQuery.teamId).get();
-      const data = SlackOAuthDoc.data() as Installation<typeof authVersion, false>;
-      return data;
+      const data = SlackOAuthDoc.data() as SlackOAuth;
+      return data.installation;
     },
   },
 });
