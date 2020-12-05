@@ -28,7 +28,15 @@ const installer = new InstallProvider({
 
 export const slackOAuthUrl = functions.https.onRequest(async (request, response) => {
   const url = await installer.generateInstallUrl({
-    scopes: ["channels:history", "reactions:read", "emoji:read"],
+    scopes: [
+      "channels:history",
+      "channels:join",
+      "channels:read",
+      "chat:write",
+      "reactions:read",
+      "emoji:read",
+      "chat:write.public",
+    ],
     redirectUri: CONFIG.slack.redirect_uri,
   });
   logger.debug(url);

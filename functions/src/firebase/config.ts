@@ -6,6 +6,7 @@ type Config = {
     client_secret: string;
     redirect_uri: string;
     state_secret: string;
+    signing_secret: string;
   };
 };
 
