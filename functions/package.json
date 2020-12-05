@@ -8,13 +8,15 @@
     "start": "yarn shell",
     "deploy": "firebase deploy --only functions",
     "deploy:prod": "yarn deploy --force",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "emulators": "firebase emulators:start"
   },
   "engines": {
     "node": "12"
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@slack/oauth": "1.4.0",
     "firebase-admin": "9.4.1",
     "firebase-functions": "3.12.0"
   },
