@@ -31,17 +31,20 @@ slackInteractions.action({ actionId: ConversationsSelectId }, async (_payload, r
   }
 
   const SlackOAuthDoc = await SlackOAuthDB.doc(payload.team.id).get();
-  const data = SlackOAuthDoc.data() as SlackOAuth;
+  let slackOAuthData = SlackOAuthDoc.data() as SlackOAuth;
   const {
     installation: { bot, team },
-  } = data;
+  } = slackOAuthData;
   if (!bot) {
     return;
   }
 
-  data.targetChannelId = channelId;
-  data.updatedAt = FieldValue.serverTimestamp();
-  await SlackOAuthDB.doc(team.id).set(data);
+  slackOAuthData = {
+    ...slackOAuthData,
+    targetChannelId: channelId,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  await SlackOAuthDB.doc(team.id).set(slackOAuthData);
 
   const { token, userId } = bot;
   const web = new WebClient(token);
