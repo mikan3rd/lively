@@ -6,8 +6,6 @@ import { functions, logger } from "./firebase/functions";
 import { ConversationsSelectId } from "./interactive";
 import { SlackClient } from "./slack/client";
 
-const ValidEventTypeList = ["app_home_opened", "channel_created", "reaction_added", "emoji_changed"] as const;
-
 type EventCommonJson<T> = {
   api_app_id: string;
   token: string;
@@ -17,12 +15,12 @@ type EventCommonJson<T> = {
 };
 
 type AppHomeOpened = EventCommonJson<{
-  type: typeof ValidEventTypeList[0];
+  type: "app_home_opened";
   user: string;
 }>;
 
 type ChannelCreated = EventCommonJson<{
-  type: typeof ValidEventTypeList[1];
+  type: "channel_created";
   channel: {
     id: string;
     name: string;
@@ -32,7 +30,7 @@ type ChannelCreated = EventCommonJson<{
 }>;
 
 type ReactionAdded = EventCommonJson<{
-  type: typeof ValidEventTypeList[2];
+  type: "reaction_added";
   user: string;
   reaction: string;
   item_user: "string";
@@ -45,7 +43,7 @@ type ReactionAdded = EventCommonJson<{
 }>;
 
 type EmojiChanged = EventCommonJson<{
-  type: typeof ValidEventTypeList[3];
+  type: "emoji_changed";
   subtype: "add" | "remove" | "rename";
   name: string;
   value: string;
@@ -69,11 +67,6 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     event: { type },
     team_id,
   } = body;
-
-  if (!ValidEventTypeList.includes(type)) {
-    response.send(request.body.challenge);
-    return;
-  }
 
   const client = await SlackClient.new(team_id);
   const {
@@ -147,5 +140,5 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     }
   }
 
-  response.send();
+  response.send(request.body.challenge);
 });
