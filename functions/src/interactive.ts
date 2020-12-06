@@ -44,7 +44,7 @@ slackInteractions.action({ actionId: ConversationsSelectId }, async (payload, re
   const { token, userId } = bot;
   await web.chat.postMessage({
     channel: channelId,
-    text: `:wave: <@${userId}> が投稿するよ！`,
+    text: `:tada: <@${userId}> が投稿を開始します！ お楽しみに！`,
     token,
   });
 });
