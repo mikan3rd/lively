@@ -1,10 +1,10 @@
 import { verifyRequestSignature } from "@slack/events-api";
-import { View, WebClient } from "@slack/web-api";
+import { View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
-import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
-import { OpenModalId } from "./interactive";
+import { ConversationsSelectId } from "./interactive";
+import { SlackClient } from "./slack/client";
 
 type EventCommonJson<T> = {
   api_app_id: string;
@@ -29,17 +29,28 @@ type ChannelCreated = EventCommonJson<{
   };
 }>;
 
-type MessageEvent = EventCommonJson<{
-  type: "message";
-  channel: string;
+type ReactionAdded = EventCommonJson<{
+  type: "reaction_added";
   user: string;
-  text: string;
-  ts: string;
+  reaction: string;
+  item_user: "string";
+  item: {
+    type: string;
+    channel: string;
+    ts: string;
+  };
   event_ts: string;
-  channel_type: string;
 }>;
 
-type EventBody = AppHomeOpened | ChannelCreated | MessageEvent;
+type EmojiChanged = EventCommonJson<{
+  type: "emoji_changed";
+  subtype: "add" | "remove" | "rename";
+  name: string;
+  value: string;
+  event_ts: string;
+}>;
+
+type EventBody = AppHomeOpened | ChannelCreated | ReactionAdded | EmojiChanged;
 
 export const slackEvent = functions.https.onRequest(async (request, response) => {
   verifyRequestSignature({
@@ -57,21 +68,17 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     team_id,
   } = body;
 
-  const SlackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
-  const oauthData = SlackOAuthDoc.data() as SlackOAuth;
-  const token = oauthData.installation.bot?.token;
-
-  if (!token) {
-    response.status(400).send();
-  }
-
-  const web = new WebClient(token);
+  const client = await SlackClient.new(team_id);
+  const {
+    slackOAuthData: { targetChannelId },
+    web,
+    bot: { token },
+  } = client;
 
   if (type === "app_home_opened") {
     const {
       event: { user },
     } = body as AppHomeOpened;
-
     const view: View = {
       type: "home",
       blocks: [
@@ -79,21 +86,24 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*botの投稿先のチャンネルを設定してください*",
+            text: "*[必須]* botの投稿先のチャンネルを設定してください",
           },
           accessory: {
-            type: "button",
-            action_id: OpenModalId,
-            style: "primary",
-            text: {
+            action_id: ConversationsSelectId,
+            type: "conversations_select",
+            initial_conversation: targetChannelId,
+            placeholder: {
               type: "plain_text",
-              text: "Add a Stickie",
+              text: "[必須]",
+            },
+            filter: {
+              include: ["public"],
+              exclude_bot_users: true,
             },
           },
         },
       ],
     };
-
     await web.views.publish({
       token,
       user_id: user,
@@ -105,14 +115,29 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     const {
       event: { channel },
     } = body as ChannelCreated;
-    await web.chat.postMessage({ channel: channel.id, text: `#${channel.name} が作成されました`, token });
+    if (targetChannelId) {
+      await web.chat.postMessage({
+        channel: targetChannelId,
+        text: `:new: チャンネル <#${channel.id}> が作成されました！ みんなも参加しよう！`,
+        token,
+      });
+    }
   }
 
-  if (type === "message") {
+  if (type === "emoji_changed") {
     const {
-      event: { channel, text },
-    } = body as MessageEvent;
-    await web.chat.postMessage({ channel, text, token });
+      event: { subtype, name, value },
+    } = body as EmojiChanged;
+    if (subtype === "add") {
+      if (targetChannelId) {
+        await web.chat.postMessage({
+          channel: targetChannelId,
+          text: `:new: リアクション :${name}: が追加されました！ みんなも使ってみよう！`,
+          attachments: [{ blocks: [{ type: "image", image_url: value, alt_text: value }] }],
+          token,
+        });
+      }
+    }
   }
 
   response.send(request.body.challenge);

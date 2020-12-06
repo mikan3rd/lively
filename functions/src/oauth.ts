@@ -11,11 +11,22 @@ const installer = new InstallProvider({
   authVersion: "v2",
   installationStore: {
     storeInstallation: async (installation) => {
-      const data: SlackOAuth = {
-        installation,
-        updatedAt: FieldValue.serverTimestamp(),
-        createdAt: FieldValue.serverTimestamp(),
-      };
+      const SlackOAuthDoc = await SlackOAuthDB.doc(installation.team.id).get();
+      let data = {} as SlackOAuth;
+      if (SlackOAuthDoc.exists) {
+        const slackOAuthData = SlackOAuthDoc.data() as SlackOAuth;
+        data = {
+          ...slackOAuthData,
+          installation,
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+      } else {
+        data = {
+          installation,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+      }
       await SlackOAuthDB.doc(installation.team.id).set(data);
     },
     fetchInstallation: async (installQuery) => {
@@ -30,12 +41,12 @@ export const slackOAuthUrl = functions.https.onRequest(async (request, response)
   const url = await installer.generateInstallUrl({
     scopes: [
       "channels:history",
-      "channels:join",
       "channels:read",
       "chat:write",
-      "reactions:read",
-      "emoji:read",
       "chat:write.public",
+      "emoji:read",
+      "reactions:read",
+      "im:write",
     ],
     redirectUri: CONFIG.slack.redirect_uri,
   });
