@@ -4,7 +4,7 @@ import { View, WebClient } from "@slack/web-api";
 import { CONFIG } from "./firebase/config";
 import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
-import { OpenModalId } from "./interactive";
+import { ConversationsSelectId } from "./interactive";
 
 type EventCommonJson<T> = {
   api_app_id: string;
@@ -58,13 +58,14 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
   } = body;
 
   const SlackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
-  const oauthData = SlackOAuthDoc.data() as SlackOAuth;
-  const token = oauthData.installation.bot?.token;
-
-  if (!token) {
-    response.status(400).send();
+  const {
+    installation: { bot },
+    targetChannelId,
+  } = SlackOAuthDoc.data() as SlackOAuth;
+  if (!bot) {
+    return;
   }
-
+  const { token } = bot;
   const web = new WebClient(token);
 
   if (type === "app_home_opened") {
@@ -79,15 +80,19 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*botの投稿先のチャンネルを設定してください*",
+            text: "*[必須]* botの投稿先のチャンネルを設定してください",
           },
           accessory: {
-            type: "button",
-            action_id: OpenModalId,
-            style: "primary",
-            text: {
+            action_id: ConversationsSelectId,
+            type: "conversations_select",
+            initial_conversation: targetChannelId,
+            placeholder: {
               type: "plain_text",
-              text: "Add a Stickie",
+              text: "[必須]",
+            },
+            filter: {
+              include: ["public"],
+              exclude_bot_users: true,
             },
           },
         },
@@ -105,14 +110,13 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     const {
       event: { channel },
     } = body as ChannelCreated;
-    await web.chat.postMessage({ channel: channel.id, text: `#${channel.name} が作成されました`, token });
-  }
-
-  if (type === "message") {
-    const {
-      event: { channel, text },
-    } = body as MessageEvent;
-    await web.chat.postMessage({ channel, text, token });
+    if (targetChannelId) {
+      await web.chat.postMessage({
+        channel: targetChannelId,
+        text: `:new: チャンネル <#${channel.id}> が作成されました！`,
+        token,
+      });
+    }
   }
 
   response.send(request.body.challenge);
