@@ -29,17 +29,28 @@ type ChannelCreated = EventCommonJson<{
   };
 }>;
 
-type MessageEvent = EventCommonJson<{
-  type: "message";
-  channel: string;
+type ReactionAdded = EventCommonJson<{
+  type: "reaction_added";
   user: string;
-  text: string;
-  ts: string;
+  reaction: string;
+  item_user: "string";
+  item: {
+    type: string;
+    channel: string;
+    ts: string;
+  };
   event_ts: string;
-  channel_type: string;
 }>;
 
-type EventBody = AppHomeOpened | ChannelCreated | MessageEvent;
+type EmojiChanged = EventCommonJson<{
+  type: "emoji_changed";
+  subtype: "add" | "remove" | "rename";
+  name: string;
+  value: string;
+  event_ts: string;
+}>;
+
+type EventBody = AppHomeOpened | ChannelCreated | ReactionAdded | EmojiChanged;
 
 export const slackEvent = functions.https.onRequest(async (request, response) => {
   verifyRequestSignature({
@@ -113,9 +124,26 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     if (targetChannelId) {
       await web.chat.postMessage({
         channel: targetChannelId,
-        text: `:new: チャンネル <#${channel.id}> が作成されました！`,
+        text: `:new: チャンネル <#${channel.id}> が作成されました！ みんなも参加しよう！`,
         token,
       });
+    }
+  }
+
+  if (type === "emoji_changed") {
+    const {
+      event: { subtype, name, value },
+    } = body as EmojiChanged;
+
+    if (subtype === "add") {
+      if (targetChannelId) {
+        await web.chat.postMessage({
+          channel: targetChannelId,
+          text: `:new: リアクション :${name}: が追加されました！ みんなも使ってみよう！`,
+          attachments: [{ blocks: [{ type: "image", image_url: value, alt_text: value }] }],
+          token,
+        });
+      }
     }
   }
 
