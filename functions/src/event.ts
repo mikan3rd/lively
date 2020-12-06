@@ -1,10 +1,12 @@
 import { verifyRequestSignature } from "@slack/events-api";
-import { View, WebClient } from "@slack/web-api";
+import { View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
-import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
 import { ConversationsSelectId } from "./interactive";
+import { SlackClient } from "./slack/client";
+
+const ValidEventTypeList = ["app_home_opened", "channel_created", "reaction_added", "emoji_changed"] as const;
 
 type EventCommonJson<T> = {
   api_app_id: string;
@@ -15,12 +17,12 @@ type EventCommonJson<T> = {
 };
 
 type AppHomeOpened = EventCommonJson<{
-  type: "app_home_opened";
+  type: typeof ValidEventTypeList[0];
   user: string;
 }>;
 
 type ChannelCreated = EventCommonJson<{
-  type: "channel_created";
+  type: typeof ValidEventTypeList[1];
   channel: {
     id: string;
     name: string;
@@ -30,7 +32,7 @@ type ChannelCreated = EventCommonJson<{
 }>;
 
 type ReactionAdded = EventCommonJson<{
-  type: "reaction_added";
+  type: typeof ValidEventTypeList[2];
   user: string;
   reaction: string;
   item_user: "string";
@@ -43,7 +45,7 @@ type ReactionAdded = EventCommonJson<{
 }>;
 
 type EmojiChanged = EventCommonJson<{
-  type: "emoji_changed";
+  type: typeof ValidEventTypeList[3];
   subtype: "add" | "remove" | "rename";
   name: string;
   value: string;
@@ -68,22 +70,22 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     team_id,
   } = body;
 
-  const SlackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
-  const {
-    installation: { bot },
-    targetChannelId,
-  } = SlackOAuthDoc.data() as SlackOAuth;
-  if (!bot) {
+  if (!ValidEventTypeList.includes(type)) {
+    response.send(request.body.challenge);
     return;
   }
-  const { token } = bot;
-  const web = new WebClient(token);
+
+  const client = await SlackClient.new(team_id);
+  const {
+    slackOAuthData: { targetChannelId },
+    web,
+    bot: { token },
+  } = client;
 
   if (type === "app_home_opened") {
     const {
       event: { user },
     } = body as AppHomeOpened;
-
     const view: View = {
       type: "home",
       blocks: [
@@ -109,7 +111,6 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
         },
       ],
     };
-
     await web.views.publish({
       token,
       user_id: user,
@@ -134,7 +135,6 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     const {
       event: { subtype, name, value },
     } = body as EmojiChanged;
-
     if (subtype === "add") {
       if (targetChannelId) {
         await web.chat.postMessage({
@@ -147,5 +147,5 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     }
   }
 
-  response.send(request.body.challenge);
+  response.send();
 });

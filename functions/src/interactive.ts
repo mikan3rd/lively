@@ -1,9 +1,9 @@
 import { createMessageAdapter } from "@slack/interactive-messages";
-import { WebClient } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
-import { FieldValue, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
+import { FieldValue, SlackOAuthDB } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
+import { SlackClient } from "./slack/client";
 
 export const ConversationsSelectId = "conversations_select" as const;
 
@@ -22,22 +22,17 @@ type ConversationPayload = {
 
 const slackInteractions = createMessageAdapter(CONFIG.slack.signing_secret);
 
-slackInteractions.action({ actionId: ConversationsSelectId }, async (_payload, respond) => {
-  logger.info(_payload);
-  const payload = _payload as ConversationPayload;
-  const channelId = payload.actions.find((action) => action.type === "conversations_select")?.selected_conversation;
+slackInteractions.action({ actionId: ConversationsSelectId }, async (payload, respond) => {
+  logger.info(payload);
+  const { team, actions } = payload as ConversationPayload;
+  const channelId = actions.find((action) => action.type === "conversations_select")?.selected_conversation;
   if (!channelId) {
     return;
   }
 
-  const SlackOAuthDoc = await SlackOAuthDB.doc(payload.team.id).get();
-  let slackOAuthData = SlackOAuthDoc.data() as SlackOAuth;
-  const {
-    installation: { bot, team },
-  } = slackOAuthData;
-  if (!bot) {
-    return;
-  }
+  const client = await SlackClient.new(team.id);
+  const { web, bot } = client;
+  let { slackOAuthData } = client;
 
   slackOAuthData = {
     ...slackOAuthData,
@@ -47,7 +42,6 @@ slackInteractions.action({ actionId: ConversationsSelectId }, async (_payload, r
   await SlackOAuthDB.doc(team.id).set(slackOAuthData);
 
   const { token, userId } = bot;
-  const web = new WebClient(token);
   await web.chat.postMessage({
     channel: channelId,
     text: `:wave: <@${userId}> が投稿するよ！`,
