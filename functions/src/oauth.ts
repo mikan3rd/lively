@@ -12,11 +12,9 @@ const installer = new InstallProvider({
   installationStore: {
     storeInstallation: async (installation) => {
       const SlackOAuthDoc = await SlackOAuthDB.doc(installation.team.id).get();
-      let data = {} as SlackOAuth;
+      let data = {} as Partial<SlackOAuth>;
       if (SlackOAuthDoc.exists) {
-        const slackOAuthData = SlackOAuthDoc.data() as SlackOAuth;
         data = {
-          ...slackOAuthData,
           installation,
           updatedAt: FieldValue.serverTimestamp(),
         };
@@ -27,7 +25,7 @@ const installer = new InstallProvider({
           updatedAt: FieldValue.serverTimestamp(),
         };
       }
-      await SlackOAuthDB.doc(installation.team.id).set(data);
+      await SlackOAuthDB.doc(installation.team.id).set(data, { merge: true });
     },
     fetchInstallation: async (installQuery) => {
       const SlackOAuthDoc = await SlackOAuthDB.doc(installQuery.teamId).get();
@@ -41,6 +39,7 @@ export const slackOAuthUrl = functions.https.onRequest(async (request, response)
   const url = await installer.generateInstallUrl({
     scopes: [
       "channels:history",
+      "channels:join",
       "channels:read",
       "chat:write",
       "chat:write.public",

@@ -3,7 +3,7 @@ import { View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
 import { functions, logger } from "./firebase/functions";
-import { ConversationsSelectId } from "./interactive";
+import { Action } from "./interactive";
 import { SlackClient } from "./slack/client";
 
 type EventCommonJson<T> = {
@@ -73,21 +73,56 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*[必須]* botの投稿先のチャンネルを設定してください",
+            text: "*【必須】* botの投稿先のチャンネルを設定してください",
           },
           accessory: {
-            action_id: ConversationsSelectId,
-            type: "conversations_select",
-            initial_conversation: targetChannelId,
+            action_id: Action.SelectTargetChannel,
+            type: "channels_select",
+            initial_channel: targetChannelId,
             placeholder: {
               type: "plain_text",
-              text: "[必須]",
-            },
-            filter: {
-              include: ["public"],
-              exclude_bot_users: true,
+              text: "【必須】",
             },
           },
+        },
+        { type: "divider" },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text:
+              "botと連携するチャンネルを設定してください\n\n_連携したチャンネルのみ人気のメッセージをチェックできます_",
+          },
+          accessory: {
+            action_id: Action.JoinChennelList,
+            type: "multi_channels_select",
+            initial_channels: [],
+            placeholder: {
+              type: "plain_text",
+              text: "チャンネルを選択",
+            },
+          },
+        },
+        {
+          type: "actions",
+          elements: [
+            {
+              type: "checkboxes",
+              action_id: Action.JoinAllChannel,
+              options: [
+                {
+                  text: {
+                    type: "mrkdwn",
+                    text: "*全てのpublicチャンネルと連携する*",
+                  },
+                  value: "checked",
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: "divider",
         },
       ],
     };
