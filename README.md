@@ -16,5 +16,6 @@ https://asia-northeast1-lively-82e58.cloudfunctions.net/slackOAuthUrl
 - 人気投稿の通知
 - 人気スレッドの通知
 - 人気チャンネルの通知
+- 今日のまとめ
 - 月別の集計
 - App Directory申請

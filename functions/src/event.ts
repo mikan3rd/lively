@@ -3,7 +3,7 @@ import { View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
 import { functions, logger } from "./firebase/functions";
-import { Action } from "./interactive";
+import { Action, CheckedValue } from "./interactive";
 import { SlackClient } from "./slack/client";
 
 type EventCommonJson<T> = {
@@ -66,6 +66,10 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     const {
       event: { user },
     } = body as AppHomeOpened;
+
+    // TODO: 全てのpublicチャンネルのチェックボックスにconfirmを入れる
+    // TODO: 全てのpublicチャンネルのチェックの状態で表示を分ける
+
     const view: View = {
       type: "home",
       blocks: [
@@ -115,7 +119,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
                     type: "mrkdwn",
                     text: "*全てのpublicチャンネルと連携する*",
                   },
-                  value: "checked",
+                  value: CheckedValue,
                 },
               ],
             },
@@ -137,6 +141,9 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     const {
       event: { channel },
     } = body as ChannelCreated;
+
+    // TODO; 全てのpublicチャンネルがONの場合はアプリを参加させる
+
     if (targetChannelId) {
       await web.chat.postMessage({
         channel: targetChannelId,
