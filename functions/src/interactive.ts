@@ -42,6 +42,7 @@ const slackInteractions = createMessageAdapter(CONFIG.slack.signing_secret);
 
 slackInteractions.action({ actionId: Action.SelectTargetChannel }, async (payload, respond) => {
   logger.info(payload);
+
   const { team, actions } = payload as ConversationsSelectPayload;
   const channelId = actions.find((action) => action.action_id === Action.SelectTargetChannel)?.selected_conversation;
   if (!channelId) {
@@ -67,9 +68,10 @@ slackInteractions.action({ actionId: Action.SelectTargetChannel }, async (payloa
 
 slackInteractions.action({ actionId: Action.JoinChennelList }, async (payload, respond) => {
   logger.info(payload);
+
   const { team, actions } = payload as MultiChannelsSelectPayload;
-  const channelIds = actions.find((action) => action.action_id === Action.JoinChennelList)?.selected_channels;
-  if (!channelIds) {
+  const selectedChannelIds = actions.find((action) => action.action_id === Action.JoinChennelList)?.selected_channels;
+  if (!selectedChannelIds || selectedChannelIds.length === 0) {
     return;
   }
 
@@ -79,13 +81,36 @@ slackInteractions.action({ actionId: Action.JoinChennelList }, async (payload, r
     bot: { token },
   } = client;
 
-  const conversationsListResult = (await web.conversations.list({
+  const conversationListParams = {
     token,
     limit: 1000,
     exclude_archived: true,
     types: "public_channel",
-  })) as ConversationListResult;
-  console.log(conversationsListResult);
+  };
+  const conversationsListResult = (await web.conversations.list(conversationListParams)) as ConversationListResult;
+
+  for (const channel of conversationsListResult.channels) {
+    if (selectedChannelIds.includes(channel.id) && !channel.is_member) {
+      await web.conversations.join({ token, channel: channel.id }).catch((e) => logger.error(e));
+    }
+    if (!selectedChannelIds.includes(channel.id) && channel.is_member) {
+      await web.conversations.leave({ token, channel: channel.id }).catch((e) => logger.error(e));
+    }
+  }
+
+  const updatedConversationsListResult = (await web.conversations.list(
+    conversationListParams,
+  )) as ConversationListResult;
+
+  const nextJoinedChannelIds = updatedConversationsListResult.channels
+    .filter((channel) => channel.is_member)
+    .map((channel) => channel.id);
+
+  const slackOAuthData: Partial<SlackOAuth> = {
+    joinedChannelIds: nextJoinedChannelIds,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  await SlackOAuthDB.doc(team.id).set(slackOAuthData, { merge: true });
 });
 
 slackInteractions.action({ actionId: Action.JoinAllChannel }, async (payload, respond) => {

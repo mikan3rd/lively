@@ -5,6 +5,7 @@ export interface ConversationListResult extends WebAPICallResult {
     id: string;
     name: string;
     num_members: number;
+    is_member: boolean;
   }[];
 }
 

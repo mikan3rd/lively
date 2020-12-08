@@ -57,7 +57,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
 
   const client = await SlackClient.new(team_id);
   const {
-    slackOAuthData: { targetChannelId },
+    slackOAuthData: { targetChannelId, joinedChannelIds },
     web,
     bot: { token },
   } = client;
@@ -96,7 +96,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
           accessory: {
             action_id: Action.JoinChennelList,
             type: "multi_channels_select",
-            initial_channels: [],
+            initial_channels: joinedChannelIds ?? [],
             placeholder: {
               type: "plain_text",
               text: "チャンネルを選択",

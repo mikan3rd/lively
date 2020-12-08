@@ -12,7 +12,7 @@ const installer = new InstallProvider({
   installationStore: {
     storeInstallation: async (installation) => {
       const SlackOAuthDoc = await SlackOAuthDB.doc(installation.team.id).get();
-      let data = {} as Partial<SlackOAuth>;
+      let data: Partial<SlackOAuth> = {};
       if (SlackOAuthDoc.exists) {
         data = {
           installation,
@@ -40,6 +40,7 @@ export const slackOAuthUrl = functions.https.onRequest(async (request, response)
     scopes: [
       "channels:history",
       "channels:join",
+      "channels:manage",
       "channels:read",
       "chat:write",
       "chat:write.public",

@@ -14,4 +14,5 @@ type TimeStamp = {
 export type SlackOAuth = {
   installation: Installation<"v1" | "v2", false>;
   targetChannelId?: string;
+  joinedChannelIds?: string[];
 } & TimeStamp;
