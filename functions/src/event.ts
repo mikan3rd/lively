@@ -67,7 +67,6 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
       event: { user },
     } = body as AppHomeOpened;
 
-    // TODO: 全てのpublicチャンネルのチェックボックスにconfirmを入れる
     // TODO: 全てのpublicチャンネルのチェックの状態で表示を分ける
 
     const view: View = {
@@ -122,6 +121,24 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
                   value: CheckedValue,
                 },
               ],
+              confirm: {
+                title: {
+                  type: "plain_text",
+                  text: "よろしいですか？",
+                },
+                text: {
+                  type: "mrkdwn",
+                  text: "全てのチャンネルで人気のメッセージをチェックできます",
+                },
+                confirm: {
+                  type: "plain_text",
+                  text: "連携する",
+                },
+                deny: {
+                  type: "plain_text",
+                  text: "キャンセル",
+                },
+              },
             },
           ],
         },
