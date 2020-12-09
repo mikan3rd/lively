@@ -1,7 +1,8 @@
 import { verifyRequestSignature } from "@slack/events-api";
-import { View } from "@slack/web-api";
+import { Checkboxes, KnownBlock, Option, View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
+import { SlackOAuth } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
 import { Action, CheckedValue } from "./interactive";
 import { SlackClient } from "./slack/client";
@@ -57,7 +58,8 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
 
   const client = await SlackClient.new(team_id);
   const {
-    slackOAuthData: { targetChannelId, joinedChannelIds },
+    slackOAuthData,
+    slackOAuthData: { targetChannelId },
     web,
     bot: { token },
   } = client;
@@ -67,90 +69,10 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
       event: { user },
     } = body as AppHomeOpened;
 
-    // TODO: 全てのpublicチャンネルのチェックの状態で表示を分ける
-
-    const view: View = {
-      type: "home",
-      blocks: [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: "*【必須】* botの投稿先のチャンネルを設定してください",
-          },
-          accessory: {
-            action_id: Action.SelectTargetChannel,
-            type: "channels_select",
-            initial_channel: targetChannelId,
-            placeholder: {
-              type: "plain_text",
-              text: "【必須】",
-            },
-          },
-        },
-        { type: "divider" },
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text:
-              "botと連携するチャンネルを設定してください\n\n_連携したチャンネルのみ人気のメッセージをチェックできます_",
-          },
-          accessory: {
-            action_id: Action.JoinChennelList,
-            type: "multi_channels_select",
-            initial_channels: joinedChannelIds ?? [],
-            placeholder: {
-              type: "plain_text",
-              text: "チャンネルを選択",
-            },
-          },
-        },
-        {
-          type: "actions",
-          elements: [
-            {
-              type: "checkboxes",
-              action_id: Action.JoinAllChannel,
-              options: [
-                {
-                  text: {
-                    type: "mrkdwn",
-                    text: "*全てのpublicチャンネルと連携する*",
-                  },
-                  value: CheckedValue,
-                },
-              ],
-              confirm: {
-                title: {
-                  type: "plain_text",
-                  text: "よろしいですか？",
-                },
-                text: {
-                  type: "mrkdwn",
-                  text: "全てのチャンネルで人気のメッセージをチェックできます",
-                },
-                confirm: {
-                  type: "plain_text",
-                  text: "連携する",
-                },
-                deny: {
-                  type: "plain_text",
-                  text: "キャンセル",
-                },
-              },
-            },
-          ],
-        },
-        {
-          type: "divider",
-        },
-      ],
-    };
     await web.views.publish({
       token,
       user_id: user,
-      view,
+      view: createHomeTab(slackOAuthData),
     });
   }
 
@@ -188,3 +110,94 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
 
   response.send(request.body.challenge);
 });
+
+export const createHomeTab = (slackOAuthData: SlackOAuth) => {
+  const { isAllPublicChannel, joinedChannelIds, targetChannelId } = slackOAuthData;
+
+  const joinChannelListBlock: KnownBlock = {
+    type: "section",
+    text: {
+      type: "mrkdwn",
+      text: "botと連携するチャンネルを設定してください\n\n_連携したチャンネルのみ人気のメッセージをチェックできます_",
+    },
+  };
+
+  const joinAllChannelOption: Option = {
+    text: {
+      type: "mrkdwn",
+      text: "*全てのpublicチャンネルと連携する*",
+    },
+    value: CheckedValue,
+  };
+
+  const joinAllChannelCheckbox: Checkboxes = {
+    type: "checkboxes",
+    action_id: Action.JoinAllChannel,
+    options: [joinAllChannelOption],
+    confirm: {
+      title: {
+        type: "plain_text",
+        text: isAllPublicChannel ? "連携を解除しますか？" : "連携しますか？",
+      },
+      text: {
+        type: "mrkdwn",
+        text: "人気のメッセージをチェックするには連携が必要です",
+      },
+      confirm: {
+        type: "plain_text",
+        text: isAllPublicChannel ? "連携解除" : "連携する",
+      },
+      deny: {
+        type: "plain_text",
+        text: "キャンセル",
+      },
+      style: isAllPublicChannel ? "danger" : "primary",
+    },
+  };
+
+  if (isAllPublicChannel) {
+    joinAllChannelCheckbox.initial_options = [joinAllChannelOption];
+  } else {
+    joinChannelListBlock.accessory = {
+      action_id: Action.JoinChennelList,
+      type: "multi_channels_select",
+      initial_channels: joinedChannelIds ?? [],
+      placeholder: {
+        type: "plain_text",
+        text: "チャンネルを選択",
+      },
+    };
+  }
+
+  const view: View = {
+    type: "home",
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "*【必須】* botの投稿先のチャンネルを設定してください",
+        },
+        accessory: {
+          action_id: Action.SelectTargetChannel,
+          type: "channels_select",
+          initial_channel: targetChannelId,
+          placeholder: {
+            type: "plain_text",
+            text: "【必須】",
+          },
+        },
+      },
+      { type: "divider" },
+      joinChannelListBlock,
+      {
+        type: "actions",
+        elements: [joinAllChannelCheckbox],
+      },
+      {
+        type: "divider",
+      },
+    ],
+  };
+  return view;
+};

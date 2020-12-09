@@ -1,6 +1,7 @@
 import { PubSub } from "@google-cloud/pubsub";
 import { createMessageAdapter } from "@slack/interactive-messages";
 
+import { createHomeTab } from "./event";
 import { CONFIG } from "./firebase/config";
 import { FieldValue, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
@@ -16,47 +17,45 @@ export const Action = {
 
 export const CheckedValue = "checked" as const;
 
-type ConversationsSelectPayload = {
+type CommonPayload<T> = {
   team: {
     id: string;
   };
-  actions: {
-    type: "conversations_select";
-    block_id: string;
-    action_ts: string;
-    action_id: string;
-    selected_conversation: string;
-  }[];
+  user: {
+    id: string;
+    name: string;
+    team_id: string;
+    username: string;
+  };
+  actions: T[];
 };
 
-type MultiChannelsSelectPayload = {
-  team: {
-    id: string;
-  };
-  actions: {
-    type: "multi_channels_select";
-    block_id: string;
-    action_ts: string;
-    action_id: string;
-    selected_channels: string[];
-  }[];
-};
+type ConversationsSelectPayload = CommonPayload<{
+  type: "conversations_select";
+  block_id: string;
+  action_ts: string;
+  action_id: string;
+  selected_conversation: string;
+}>;
 
-type CheckBoxPayload = {
-  team: {
-    id: string;
-  };
-  actions: {
-    type: "checkboxes";
-    block_id: string;
-    action_ts: string;
-    action_id: string;
-    selected_options: {
-      text: { type: string; verbatim: boolean; text: string };
-      value: typeof CheckedValue;
-    }[];
+type MultiChannelsSelectPayload = CommonPayload<{
+  type: "multi_channels_select";
+  block_id: string;
+  action_ts: string;
+  action_id: string;
+  selected_channels: string[];
+}>;
+
+type CheckBoxPayload = CommonPayload<{
+  type: "checkboxes";
+  block_id: string;
+  action_ts: string;
+  action_id: string;
+  selected_options: {
+    text: { type: string; verbatim: boolean; text: string };
+    value: typeof CheckedValue;
   }[];
-};
+}>;
 
 const defaultConversationListParams = {
   limit: 1000,
@@ -165,7 +164,7 @@ export const joinAllChannelPubSub = functions
   .runWith({ maxInstances: 1 })
   .pubsub.topic(Action.JoinAllChannel)
   .onPublish(async (message) => {
-    const { team, actions }: CheckBoxPayload = message.json;
+    const { team, actions, user }: CheckBoxPayload = message.json;
     const selectedOptions = actions.find((action) => action.action_id === Action.JoinAllChannel)?.selected_options;
 
     if (!selectedOptions) {
@@ -185,6 +184,13 @@ export const joinAllChannelPubSub = functions
         updatedAt: FieldValue.serverTimestamp(),
       };
       await SlackOAuthDB.doc(team.id).set(slackOAuthData, { merge: true });
+
+      await client.refetch();
+      await web.views.publish({
+        token,
+        user_id: user.id,
+        view: createHomeTab(client.slackOAuthData),
+      });
       return;
     }
 
@@ -206,4 +212,11 @@ export const joinAllChannelPubSub = functions
       updatedAt: FieldValue.serverTimestamp(),
     };
     await SlackOAuthDB.doc(team.id).set(slackOAuthData, { merge: true });
+
+    await client.refetch();
+    await web.views.publish({
+      token,
+      user_id: user.id,
+      view: createHomeTab(client.slackOAuthData),
+    });
   });

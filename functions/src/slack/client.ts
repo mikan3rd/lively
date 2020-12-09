@@ -27,8 +27,7 @@ export class SlackClient {
   }
 
   static async new(team_id: string) {
-    const slackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
-    const slackOAuthData = slackOAuthDoc.data() as SlackOAuth;
+    const slackOAuthData = await getSlackOAuthData(team_id);
     const {
       installation: { bot },
     } = slackOAuthData;
@@ -39,4 +38,15 @@ export class SlackClient {
     const web = new WebClient(token);
     return new SlackClient({ slackOAuthData, web, bot });
   }
+
+  async refetch() {
+    const slackOAuthData = await getSlackOAuthData(this.slackOAuthData.installation.team.id);
+    this.slackOAuthData = slackOAuthData;
+  }
 }
+
+const getSlackOAuthData = async (team_id: string) => {
+  const slackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
+  const slackOAuthData = slackOAuthDoc.data() as SlackOAuth;
+  return slackOAuthData;
+};
