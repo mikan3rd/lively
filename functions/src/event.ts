@@ -81,8 +81,6 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
       event: { channel },
     } = body as ChannelCreated;
 
-    // TODO; 全てのpublicチャンネルがONの場合はアプリを参加させる
-
     if (targetChannelId) {
       await web.chat.postMessage({
         channel: targetChannelId,
@@ -90,6 +88,8 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
         token,
       });
     }
+
+    await web.conversations.join({ token, channel: channel.id });
   }
 
   if (type === "emoji_changed") {
