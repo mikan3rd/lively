@@ -7,6 +7,7 @@ type Config = {
     redirect_uri: string;
     state_secret: string;
     signing_secret: string;
+    test_auth_token: string;
   };
 };
 

@@ -1,9 +1,10 @@
 import { verifyRequestSignature } from "@slack/events-api";
-import { View } from "@slack/web-api";
+import { Checkboxes, KnownBlock, Option, View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
+import { SlackOAuth } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
-import { ConversationsSelectId } from "./interactive";
+import { Action, CheckedValue } from "./interactive";
 import { SlackClient } from "./slack/client";
 
 type EventCommonJson<T> = {
@@ -29,19 +30,6 @@ type ChannelCreated = EventCommonJson<{
   };
 }>;
 
-type ReactionAdded = EventCommonJson<{
-  type: "reaction_added";
-  user: string;
-  reaction: string;
-  item_user: "string";
-  item: {
-    type: string;
-    channel: string;
-    ts: string;
-  };
-  event_ts: string;
-}>;
-
 type EmojiChanged = EventCommonJson<{
   type: "emoji_changed";
   subtype: "add" | "remove" | "rename";
@@ -50,7 +38,7 @@ type EmojiChanged = EventCommonJson<{
   event_ts: string;
 }>;
 
-type EventBody = AppHomeOpened | ChannelCreated | ReactionAdded | EmojiChanged;
+type EventBody = AppHomeOpened | ChannelCreated | EmojiChanged;
 
 export const slackEvent = functions.https.onRequest(async (request, response) => {
   verifyRequestSignature({
@@ -70,6 +58,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
 
   const client = await SlackClient.new(team_id);
   const {
+    slackOAuthData,
     slackOAuthData: { targetChannelId },
     web,
     bot: { token },
@@ -79,35 +68,11 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     const {
       event: { user },
     } = body as AppHomeOpened;
-    const view: View = {
-      type: "home",
-      blocks: [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: "*[必須]* botの投稿先のチャンネルを設定してください",
-          },
-          accessory: {
-            action_id: ConversationsSelectId,
-            type: "conversations_select",
-            initial_conversation: targetChannelId,
-            placeholder: {
-              type: "plain_text",
-              text: "[必須]",
-            },
-            filter: {
-              include: ["public"],
-              exclude_bot_users: true,
-            },
-          },
-        },
-      ],
-    };
+
     await web.views.publish({
       token,
       user_id: user,
-      view,
+      view: createHomeTab(slackOAuthData),
     });
   }
 
@@ -115,6 +80,9 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     const {
       event: { channel },
     } = body as ChannelCreated;
+
+    // TODO; 全てのpublicチャンネルがONの場合はアプリを参加させる
+
     if (targetChannelId) {
       await web.chat.postMessage({
         channel: targetChannelId,
@@ -142,3 +110,94 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
 
   response.send(request.body.challenge);
 });
+
+export const createHomeTab = (slackOAuthData: SlackOAuth) => {
+  const { isAllPublicChannel, joinedChannelIds, targetChannelId } = slackOAuthData;
+
+  const joinChannelListBlock: KnownBlock = {
+    type: "section",
+    text: {
+      type: "mrkdwn",
+      text: "botと連携するチャンネルを設定してください\n\n_連携したチャンネルのみ人気のメッセージをチェックできます_",
+    },
+  };
+
+  const joinAllChannelOption: Option = {
+    text: {
+      type: "mrkdwn",
+      text: "*全てのpublicチャンネルと連携する*",
+    },
+    value: CheckedValue,
+  };
+
+  const joinAllChannelCheckbox: Checkboxes = {
+    type: "checkboxes",
+    action_id: Action.JoinAllChannel,
+    options: [joinAllChannelOption],
+    confirm: {
+      title: {
+        type: "plain_text",
+        text: isAllPublicChannel ? "連携を解除しますか？" : "連携しますか？",
+      },
+      text: {
+        type: "mrkdwn",
+        text: "人気のメッセージをチェックするには連携が必要です",
+      },
+      confirm: {
+        type: "plain_text",
+        text: isAllPublicChannel ? "連携解除" : "連携する",
+      },
+      deny: {
+        type: "plain_text",
+        text: "キャンセル",
+      },
+      style: isAllPublicChannel ? "danger" : "primary",
+    },
+  };
+
+  if (isAllPublicChannel) {
+    joinAllChannelCheckbox.initial_options = [joinAllChannelOption];
+  } else {
+    joinChannelListBlock.accessory = {
+      action_id: Action.JoinChennelList,
+      type: "multi_channels_select",
+      initial_channels: joinedChannelIds ?? [],
+      placeholder: {
+        type: "plain_text",
+        text: "チャンネルを選択",
+      },
+    };
+  }
+
+  const view: View = {
+    type: "home",
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "*【必須】* botの投稿先のチャンネルを設定してください",
+        },
+        accessory: {
+          action_id: Action.SelectTargetChannel,
+          type: "channels_select",
+          initial_channel: targetChannelId,
+          placeholder: {
+            type: "plain_text",
+            text: "【必須】",
+          },
+        },
+      },
+      { type: "divider" },
+      joinChannelListBlock,
+      {
+        type: "actions",
+        elements: [joinAllChannelCheckbox],
+      },
+      {
+        type: "divider",
+      },
+    ],
+  };
+  return view;
+};

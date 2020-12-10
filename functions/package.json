@@ -16,6 +16,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@google-cloud/pubsub": "2.7.0",
     "@slack/events-api": "2.3.4",
     "@slack/interactive-messages": "1.7.0",
     "@slack/oauth": "1.4.0",
