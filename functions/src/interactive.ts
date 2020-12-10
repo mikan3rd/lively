@@ -3,7 +3,7 @@ import { createMessageAdapter } from "@slack/interactive-messages";
 
 import { createHomeTab } from "./event";
 import { CONFIG } from "./firebase/config";
-import { FieldValue, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
+import { FieldValue, SlackOAuth } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
 import { toBufferJson } from "./firebase/pubsub";
 import { SlackClient } from "./slack/client";
