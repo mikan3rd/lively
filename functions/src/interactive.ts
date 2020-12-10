@@ -102,7 +102,7 @@ export const selectTargetChannelPubSub = functions
       targetChannelId: channelId,
       updatedAt: FieldValue.serverTimestamp(),
     };
-    await SlackOAuthDB.doc(team.id).set(slackOAuthData, { merge: true });
+    await client.update(slackOAuthData);
 
     const { token, userId } = bot;
     await web.chat.postMessage({
@@ -157,7 +157,7 @@ export const joinChannelListPubSub = functions
       joinedChannelIds: nextJoinedChannelIds,
       updatedAt: FieldValue.serverTimestamp(),
     };
-    await SlackOAuthDB.doc(team.id).set(nextSlackOAuthData, { merge: true });
+    await client.update(nextSlackOAuthData);
   });
 
 export const joinAllChannelPubSub = functions
@@ -179,13 +179,22 @@ export const joinAllChannelPubSub = functions
 
     const isAllPublicChannel = selectedOptions.length > 0;
     if (!isAllPublicChannel) {
+      const conversationListParams = { ...defaultConversationListParams, token };
+      const updatedConversationsListResult = (await web.conversations.list(
+        conversationListParams,
+      )) as ConversationListResult;
+
+      const nextJoinedChannelIds = updatedConversationsListResult.channels
+        .filter((channel) => channel.is_member)
+        .map((channel) => channel.id);
+
       const slackOAuthData: Partial<SlackOAuth> = {
         isAllPublicChannel: false,
+        joinedChannelIds: nextJoinedChannelIds,
         updatedAt: FieldValue.serverTimestamp(),
       };
-      await SlackOAuthDB.doc(team.id).set(slackOAuthData, { merge: true });
+      await client.update(slackOAuthData, true);
 
-      await client.refetch();
       await web.views.publish({
         token,
         user_id: user.id,
@@ -211,9 +220,8 @@ export const joinAllChannelPubSub = functions
       isAllPublicChannel,
       updatedAt: FieldValue.serverTimestamp(),
     };
-    await SlackOAuthDB.doc(team.id).set(slackOAuthData, { merge: true });
+    await client.update(slackOAuthData, true);
 
-    await client.refetch();
     await web.views.publish({
       token,
       user_id: user.id,
