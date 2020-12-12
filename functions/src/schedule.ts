@@ -1,4 +1,5 @@
 import { PubSub } from "@google-cloud/pubsub";
+import dayjs from "dayjs";
 
 import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { functions, scheduleFunctions } from "./firebase/functions";
@@ -51,6 +52,7 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
     types: "public_channel",
   })) as ConversationListResult;
 
+  const oldestTime = dayjs().subtract(1, "day").unix();
   let messages: TrendMessageType[] = [];
   const sortedChannels = conversationsListResult.channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
   for (const channel of sortedChannels) {
@@ -59,6 +61,7 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
       channel: channel.id,
       inclusive: true,
       limit: 1000,
+      oldest: String(oldestTime),
     })) as ConversationHistoryResult;
     const formedMessages = conversationHistoryResult.messages.map((message) => ({
       channelId: channel.id,
@@ -68,7 +71,7 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
     messages = messages.concat(formedMessages);
   }
 
-  const reactionNumThreshold = 2; // TODO: 調整が必要
+  const reactionNumThreshold = 3; // TODO: 調整が必要
   const links: string[] = [];
   const trendMessages: TrendMessageType[] = [];
   for (const message of messages) {
