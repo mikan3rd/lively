@@ -1,6 +1,13 @@
 import { WebClient } from "@slack/web-api";
 
-import { SlackOAuth, SlackOAuthDB } from "../firebase/firestore";
+import {
+  FieldValue,
+  SlackOAuth,
+  SlackOAuthDB,
+  SlackPostedTrendMessage,
+  SlackPostedTrendMessageDB,
+  TimeStamp,
+} from "../firebase/firestore";
 
 type BotType = {
   token: string;
@@ -27,7 +34,7 @@ export class SlackClient {
   }
 
   static async new(team_id: string) {
-    const slackOAuthData = await getSlackOAuthData(team_id);
+    const slackOAuthData = await SlackClient.getSlackOAuthData(team_id);
     const {
       installation: { bot },
     } = slackOAuthData;
@@ -39,6 +46,12 @@ export class SlackClient {
     return new SlackClient({ slackOAuthData, web, bot });
   }
 
+  static async getSlackOAuthData(team_id: string) {
+    const slackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
+    const slackOAuthData = slackOAuthDoc.data() as SlackOAuth;
+    return slackOAuthData;
+  }
+
   async update(slackOAuthData: Partial<SlackOAuth>, refetch = false) {
     await SlackOAuthDB.doc(this.teamId).set(slackOAuthData, { merge: true });
     if (refetch) {
@@ -47,17 +60,31 @@ export class SlackClient {
   }
 
   async refetch() {
-    const slackOAuthData = await getSlackOAuthData(this.teamId);
+    const slackOAuthData = await SlackClient.getSlackOAuthData(this.teamId);
     this.slackOAuthData = slackOAuthData;
+  }
+
+  async setPostedTrendMessage(data: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp>) {
+    data.updatedAt = FieldValue.serverTimestamp();
+    if (!data.createdAt) {
+      data.createdAt = FieldValue.serverTimestamp();
+    }
+    await SlackPostedTrendMessageDB.doc(data.teamId).set(data, { merge: true });
+  }
+
+  async getPostedTrendMessage(teamId: string) {
+    const doc = await SlackPostedTrendMessageDB.doc(teamId).get();
+    if (doc.exists) {
+      return doc.data() as SlackPostedTrendMessage;
+    }
+    const defaultData: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp> = {
+      teamId,
+      messages: [],
+    };
+    return defaultData;
   }
 
   get teamId() {
     return this.slackOAuthData.installation.team.id;
   }
 }
-
-const getSlackOAuthData = async (team_id: string) => {
-  const slackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
-  const slackOAuthData = slackOAuthDoc.data() as SlackOAuth;
-  return slackOAuthData;
-};

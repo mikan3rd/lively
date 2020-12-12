@@ -23,3 +23,8 @@ export interface ConversationHistoryResult extends WebAPICallResult {
     }[];
   }[];
 }
+
+export interface ChatGetPermalinkResult extends WebAPICallResult {
+  channel: string;
+  permalink: string;
+}
