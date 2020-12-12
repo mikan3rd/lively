@@ -1,7 +1,7 @@
 import { PubSub } from "@google-cloud/pubsub";
 import dayjs from "dayjs";
 
-import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
+import { SlackOAuth, SlackOAuthDB, SlackPostedTrendMessage } from "./firebase/firestore";
 import { functions, scheduleFunctions } from "./firebase/functions";
 import { Topic, toBufferJson } from "./firebase/pubsub";
 import { SlackClient } from "./slack/client";
@@ -52,7 +52,7 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
     types: "public_channel",
   })) as ConversationListResult;
 
-  const oldestTime = dayjs().subtract(1, "day").unix();
+  const oldestTime = dayjs().subtract(2, "day").unix();
   let messages: TrendMessageType[] = [];
   const sortedChannels = conversationsListResult.channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
   for (const channel of sortedChannels) {
@@ -71,6 +71,7 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
     messages = messages.concat(formedMessages);
   }
 
+  const postedTrendMessages = await client.getPostedTrendMessage(team.id);
   const reactionNumThreshold = 3; // TODO: 調整が必要
   const links: string[] = [];
   const trendMessages: TrendMessageType[] = [];
@@ -79,7 +80,11 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
       continue;
     }
 
-    if (await client.hasPostedTrendMessage(team.id, message.channelId, message.ts)) {
+    if (
+      postedTrendMessages.messages.some(
+        (postedMessage) => postedMessage.channelId === message.channelId && postedMessage.messageTs === message.ts,
+      )
+    ) {
       continue;
     }
 
@@ -105,7 +110,10 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
     });
   }
 
-  for (const message of trendMessages) {
-    await client.setPostedTrendMessage(team.id, message.channelId, message.ts);
-  }
+  const postedMessages: SlackPostedTrendMessage["messages"] = trendMessages.map(({ channelId, ts }) => ({
+    channelId,
+    messageTs: ts,
+  }));
+  postedTrendMessages.messages = postedTrendMessages.messages.concat(postedMessages);
+  await client.setPostedTrendMessage(postedTrendMessages);
 });

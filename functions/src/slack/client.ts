@@ -6,6 +6,7 @@ import {
   SlackOAuthDB,
   SlackPostedTrendMessage,
   SlackPostedTrendMessageDB,
+  TimeStamp,
 } from "../firebase/firestore";
 
 type BotType = {
@@ -63,25 +64,24 @@ export class SlackClient {
     this.slackOAuthData = slackOAuthData;
   }
 
-  generatePostedTrendMessageId(teamId: string, channelId: string, messageTs: string) {
-    return `${teamId}-${channelId}-${messageTs}`;
+  async setPostedTrendMessage(data: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp>) {
+    data.updatedAt = FieldValue.serverTimestamp();
+    if (!data.createdAt) {
+      data.createdAt = FieldValue.serverTimestamp();
+    }
+    await SlackPostedTrendMessageDB.doc(data.teamId).set(data, { merge: true });
   }
 
-  async setPostedTrendMessage(teamId: string, channelId: string, messageTs: string) {
-    const docId = this.generatePostedTrendMessageId(teamId, channelId, messageTs);
-    const data: Partial<SlackPostedTrendMessage> = {
+  async getPostedTrendMessage(teamId: string) {
+    const doc = await SlackPostedTrendMessageDB.doc(teamId).get();
+    if (doc.exists) {
+      return doc.data() as SlackPostedTrendMessage;
+    }
+    const defaultData: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp> = {
       teamId,
-      channelId,
-      messageTs,
-      updatedAt: FieldValue.serverTimestamp(),
+      messages: [],
     };
-    await SlackPostedTrendMessageDB.doc(docId).set(data, { merge: true });
-  }
-
-  async hasPostedTrendMessage(teamId: string, channelId: string, messageTs: string) {
-    const docId = this.generatePostedTrendMessageId(teamId, channelId, messageTs);
-    const slackOAuthDocs = await SlackPostedTrendMessageDB.doc(docId).get();
-    return slackOAuthDocs.exists;
+    return defaultData;
   }
 
   get teamId() {

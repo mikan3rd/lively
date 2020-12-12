@@ -140,6 +140,10 @@ export const createHomeTab = (slackOAuthData: SlackOAuth) => {
       type: "mrkdwn",
       text: "*全てのpublicチャンネルと連携する*",
     },
+    description: {
+      type: "plain_text",
+      text: "新しく作成されたpublicチャンネルにも自動で連携されます",
+    },
     value: CheckedValue,
   };
 
