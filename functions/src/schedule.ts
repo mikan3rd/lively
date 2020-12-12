@@ -1,4 +1,8 @@
-import { functions } from "./firebase/functions";
+import { PubSub } from "@google-cloud/pubsub";
+
+import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
+import { functions, scheduleFunctions } from "./firebase/functions";
+import { Topic, toBufferJson } from "./firebase/pubsub";
 import { SlackClient } from "./slack/client";
 import {
   ChatGetPermalinkResult,
@@ -6,8 +10,30 @@ import {
   ConversationListResult,
 } from "./types/SlackWebAPICallResult";
 
-export const slackReactionList = functions.https.onRequest(async (request, response) => {
-  const client = await SlackClient.new();
+type TrendMessageType = { channelId: string; ts: string; reactionNum: number };
+
+export const batchTrendMessageScheduler = scheduleFunctions()("0 * * * *").onRun(async (context) => {
+  const docs = await SlackOAuthDB.get();
+  const oauthList: SlackOAuth[] = [];
+  docs.forEach((doc) => {
+    oauthList.push(doc.data() as SlackOAuth);
+  });
+
+  const pubSub = new PubSub();
+  for (const oauthData of oauthList) {
+    if (!oauthData.targetChannelId) {
+      continue;
+    }
+    await pubSub.topic(Topic.PostTrendMessage).publish(toBufferJson(oauthData));
+  }
+});
+
+export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMessage).onPublish(async (message) => {
+  const {
+    installation: { team },
+  }: SlackOAuth = message.json;
+
+  const client = await SlackClient.new(team.id);
   const {
     web,
     bot: { token },
@@ -25,7 +51,7 @@ export const slackReactionList = functions.https.onRequest(async (request, respo
     types: "public_channel",
   })) as ConversationListResult;
 
-  let messages: { channelId: string; ts: string; reactionNum: number }[] = [];
+  let messages: TrendMessageType[] = [];
   const sortedChannels = conversationsListResult.channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
   for (const channel of sortedChannels) {
     const conversationHistoryResult = (await web.conversations.history({
@@ -42,19 +68,41 @@ export const slackReactionList = functions.https.onRequest(async (request, respo
     messages = messages.concat(formedMessages);
   }
 
-  const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
-  const targetMeesage = sortedMessages[0];
-  const permalinkResult = (await web.chat.getPermalink({
-    token,
-    channel: targetMeesage.channelId,
-    message_ts: targetMeesage.ts,
-  })) as ChatGetPermalinkResult;
+  const reactionNumThreshold = 2; // TODO: 調整が必要
+  const links: string[] = [];
+  const trendMessages: TrendMessageType[] = [];
+  for (const message of messages) {
+    if (message.reactionNum < reactionNumThreshold) {
+      continue;
+    }
 
-  await web.chat.postMessage({
-    channel: targetChannelId,
-    text: `:tada: この投稿が盛り上がってるよ！\n${permalinkResult.permalink}`,
-    token,
-  });
+    if (await client.hasPostedTrendMessage(team.id, message.channelId, message.ts)) {
+      continue;
+    }
 
-  response.send();
+    const permalinkResult = (await web.chat.getPermalink({
+      token,
+      channel: message.channelId,
+      message_ts: message.ts,
+    })) as ChatGetPermalinkResult;
+
+    links.push(permalinkResult.permalink);
+    trendMessages.push(message);
+  }
+
+  for (const [i, link] of links.entries()) {
+    let text = link;
+    if (i === 0) {
+      text = `:tada: この投稿が盛り上がってるよ！\n${link}`;
+    }
+    await web.chat.postMessage({
+      channel: targetChannelId,
+      text,
+      token,
+    });
+  }
+
+  for (const message of trendMessages) {
+    await client.setPostedTrendMessage(team.id, message.channelId, message.ts);
+  }
 });

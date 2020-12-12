@@ -1,6 +1,12 @@
 import { WebClient } from "@slack/web-api";
 
-import { SlackOAuth, SlackOAuthDB } from "../firebase/firestore";
+import {
+  FieldValue,
+  SlackOAuth,
+  SlackOAuthDB,
+  SlackPostedTrendMessage,
+  SlackPostedTrendMessageDB,
+} from "../firebase/firestore";
 
 type BotType = {
   token: string;
@@ -27,7 +33,7 @@ export class SlackClient {
   }
 
   static async new(team_id: string) {
-    const slackOAuthData = await getSlackOAuthData(team_id);
+    const slackOAuthData = await SlackClient.getSlackOAuthData(team_id);
     const {
       installation: { bot },
     } = slackOAuthData;
@@ -39,6 +45,12 @@ export class SlackClient {
     return new SlackClient({ slackOAuthData, web, bot });
   }
 
+  static async getSlackOAuthData(team_id: string) {
+    const slackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
+    const slackOAuthData = slackOAuthDoc.data() as SlackOAuth;
+    return slackOAuthData;
+  }
+
   async update(slackOAuthData: Partial<SlackOAuth>, refetch = false) {
     await SlackOAuthDB.doc(this.teamId).set(slackOAuthData, { merge: true });
     if (refetch) {
@@ -47,17 +59,32 @@ export class SlackClient {
   }
 
   async refetch() {
-    const slackOAuthData = await getSlackOAuthData(this.teamId);
+    const slackOAuthData = await SlackClient.getSlackOAuthData(this.teamId);
     this.slackOAuthData = slackOAuthData;
+  }
+
+  generatePostedTrendMessageId(teamId: string, channelId: string, messageTs: string) {
+    return `${teamId}-${channelId}-${messageTs}`;
+  }
+
+  async setPostedTrendMessage(teamId: string, channelId: string, messageTs: string) {
+    const docId = this.generatePostedTrendMessageId(teamId, channelId, messageTs);
+    const data: Partial<SlackPostedTrendMessage> = {
+      teamId,
+      channelId,
+      messageTs,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    await SlackPostedTrendMessageDB.doc(docId).set(data, { merge: true });
+  }
+
+  async hasPostedTrendMessage(teamId: string, channelId: string, messageTs: string) {
+    const docId = this.generatePostedTrendMessageId(teamId, channelId, messageTs);
+    const slackOAuthDocs = await SlackPostedTrendMessageDB.doc(docId).get();
+    return slackOAuthDocs.exists;
   }
 
   get teamId() {
     return this.slackOAuthData.installation.team.id;
   }
 }
-
-const getSlackOAuthData = async (team_id: string) => {
-  const slackOAuthDoc = await SlackOAuthDB.doc(team_id).get();
-  const slackOAuthData = slackOAuthDoc.data() as SlackOAuth;
-  return slackOAuthData;
-};
