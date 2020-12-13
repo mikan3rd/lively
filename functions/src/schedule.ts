@@ -58,7 +58,7 @@ export const createTrendMessageQueuePubSub = functions.pubsub
     const channelIds = sortedChannels.filter((channel) => channel.is_member).map((channel) => channel.id);
 
     const bulkChannelThreshold = 30;
-    const bulkChannelIds = chunk(channelIds, bulkChannelThreshold);
+    const bulkChannelIds = chunk(channelIds, bulkChannelThreshold).map((channelIds) => ({ channelIds }));
     await client.setTrendMessageQueue({ teamId: team.id, bulkChannelIds });
   });
 
@@ -95,16 +95,16 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
   }
 
   const { bulkChannelIds } = await client.getTrendMessageQueue(team.id);
-  const channelIds = bulkChannelIds.shift();
+  const bulkChannelId = bulkChannelIds.shift();
 
-  if (!channelIds) {
+  if (!bulkChannelId) {
     return;
   }
 
   const oldestTime = dayjs().subtract(2, "day").unix();
   let messages: TrendMessageType[] = [];
 
-  for (const channelId of channelIds) {
+  for (const channelId of bulkChannelId.channelIds) {
     const conversationHistoryResult = (await web.conversations.history({
       token,
       channel: channelId,

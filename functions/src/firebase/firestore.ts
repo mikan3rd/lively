@@ -22,7 +22,7 @@ export type SlackOAuth = {
 
 export type SlackTrendMessageQueue = {
   teamId: string;
-  bulkChannelIds: string[][];
+  bulkChannelIds: { channelIds: string[] }[];
 } & TimeStamp;
 
 export type SlackPostedTrendMessage = {
