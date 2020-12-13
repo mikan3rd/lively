@@ -15,6 +15,9 @@
     "node": "12"
   },
   "main": "lib/index.js",
+  "resolutions": {
+    "node-forge": "0.10.0"
+  },
   "dependencies": {
     "@google-cloud/pubsub": "2.7.0",
     "@slack/events-api": "2.3.4",
