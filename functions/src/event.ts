@@ -131,7 +131,8 @@ export const createHomeTab = (slackOAuthData: SlackOAuth) => {
     type: "section",
     text: {
       type: "mrkdwn",
-      text: "botと連携するチャンネルを設定してください\n\n_連携したチャンネルのみ人気のメッセージをチェックできます_",
+      text:
+        "【必須】botと連携するチャンネルを設定してください\n\n連携したチャンネルのみ人気のメッセージをチェックできます",
     },
   };
 
@@ -181,7 +182,7 @@ export const createHomeTab = (slackOAuthData: SlackOAuth) => {
       initial_channels: joinedChannelIds ?? [],
       placeholder: {
         type: "plain_text",
-        text: "チャンネルを選択",
+        text: "【必須】チャンネル選択",
       },
     };
   }
@@ -201,7 +202,7 @@ export const createHomeTab = (slackOAuthData: SlackOAuth) => {
           initial_channel: targetChannelId,
           placeholder: {
             type: "plain_text",
-            text: "【必須】",
+            text: "【必須】チャンネル選択",
           },
         },
       },

@@ -62,7 +62,7 @@ export const createTrendMessageQueuePubSub = functions.pubsub
     await client.setTrendMessageQueue({ teamId: team.id, bulkChannelIds });
   });
 
-export const batchTrendMessageScheduler = scheduleFunctions()("10,20,30,40,50 * * * *").onRun(async (context) => {
+export const batchTrendMessageScheduler = scheduleFunctions()("10,20,30 * * * *").onRun(async (context) => {
   const docs = await SlackOAuthDB.get();
   const oauthList: SlackOAuth[] = [];
   docs.forEach((doc) => {
