@@ -38,20 +38,7 @@ type EmojiChanged = EventCommonJson<{
   event_ts: string;
 }>;
 
-type ReactionAdded = EventCommonJson<{
-  type: "reaction_added";
-  user: string;
-  reaction: string;
-  item_user: "string";
-  item: {
-    type: string;
-    channel: string;
-    ts: string;
-  };
-  event_ts: string;
-}>;
-
-type EventBody = AppHomeOpened | ChannelCreated | EmojiChanged | ReactionAdded;
+type EventBody = AppHomeOpened | ChannelCreated | EmojiChanged;
 
 export const slackEvent = functions.https.onRequest(async (request, response) => {
   verifyRequestSignature({

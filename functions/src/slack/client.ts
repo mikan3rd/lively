@@ -54,8 +54,12 @@ export class SlackClient {
     return slackOAuthData;
   }
 
-  async update(slackOAuthData: Partial<SlackOAuth>, refetch = false) {
-    await SlackOAuthDB.doc(this.teamId).set(slackOAuthData, { merge: true });
+  async update(data: Partial<SlackOAuth>, refetch = false) {
+    data.updatedAt = FieldValue.serverTimestamp();
+    if (!data.createdAt) {
+      data.createdAt = FieldValue.serverTimestamp();
+    }
+    await SlackOAuthDB.doc(this.teamId).set(data, { merge: true });
     if (refetch) {
       await this.refetch();
     }
@@ -74,13 +78,13 @@ export class SlackClient {
     await SlackTrendQueueDB.doc(data.teamId).set(data, { merge: true });
   }
 
-  async getTrendMessageQueue(teamId: string) {
-    const doc = await SlackTrendQueueDB.doc(teamId).get();
+  async getTrendMessageQueue() {
+    const doc = await SlackTrendQueueDB.doc(this.teamId).get();
     if (doc.exists) {
       return doc.data() as SlackTrendMessageQueue;
     }
     const defaultData: PartiallyPartial<SlackTrendMessageQueue, keyof TimeStamp> = {
-      teamId,
+      teamId: this.teamId,
       bulkChannelIds: [],
     };
     return defaultData;
@@ -94,13 +98,13 @@ export class SlackClient {
     await SlackPostedTrendMessageDB.doc(data.teamId).set(data, { merge: true });
   }
 
-  async getPostedTrendMessage(teamId: string) {
-    const doc = await SlackPostedTrendMessageDB.doc(teamId).get();
+  async getPostedTrendMessage() {
+    const doc = await SlackPostedTrendMessageDB.doc(this.teamId).get();
     if (doc.exists) {
       return doc.data() as SlackPostedTrendMessage;
     }
     const defaultData: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp> = {
-      teamId,
+      teamId: this.teamId,
       messages: [],
     };
     return defaultData;
