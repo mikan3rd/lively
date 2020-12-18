@@ -9,6 +9,11 @@ type Config = {
     signing_secret: string;
     test_auth_token: string;
   };
+  cloud_task: {
+    project: string;
+    location: string;
+    base_url: string;
+  };
 };
 
 export const CONFIG = cloudFunctions.config() as Config;

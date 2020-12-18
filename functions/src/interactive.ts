@@ -1,11 +1,13 @@
 import { PubSub } from "@google-cloud/pubsub";
+import { CloudTasksClient } from "@google-cloud/tasks";
 import { createMessageAdapter } from "@slack/interactive-messages";
+import dayjs from "dayjs";
 
+import { chunk, toBase64, toBufferJson } from "./common/utils";
 import { createHomeTab } from "./event";
 import { CONFIG } from "./firebase/config";
 import { FieldValue, SlackOAuth } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
-import { toBufferJson } from "./firebase/pubsub";
 import { SlackClient } from "./slack/client";
 import { ConversationListResult } from "./types/SlackWebAPICallResult";
 
@@ -16,6 +18,11 @@ export const Action = {
 } as const;
 
 export const CheckedValue = "checked" as const;
+export const JoinTaskQueue = "join-channel" as const;
+
+const BulkChannelThreshold = 40;
+
+type JoinChannelBody = { teamId: string; channelIds: string[] };
 
 type CommonPayload<T> = {
   team: {
@@ -135,29 +142,14 @@ export const joinChannelListPubSub = functions
     };
     const conversationsListResult = (await web.conversations.list(conversationListParams)) as ConversationListResult;
 
-    // FIXME: 一度に50以上の場合はレート制限を超える
+    const joinChannels = conversationsListResult.channels.filter((channel) => selectedChannelIds.includes(channel.id));
+    await createJoinChannelTask(team.id, joinChannels);
+
     for (const channel of conversationsListResult.channels) {
-      if (selectedChannelIds.includes(channel.id) && !channel.is_member) {
-        await web.conversations.join({ token, channel: channel.id }).catch((e) => logger.error(e));
-      }
       if (!selectedChannelIds.includes(channel.id) && channel.is_member) {
         await web.conversations.leave({ token, channel: channel.id }).catch((e) => logger.error(e));
       }
     }
-
-    const updatedConversationsListResult = (await web.conversations.list(
-      conversationListParams,
-    )) as ConversationListResult;
-
-    const nextJoinedChannelIds = updatedConversationsListResult.channels
-      .filter((channel) => channel.is_member)
-      .map((channel) => channel.id);
-
-    const nextSlackOAuthData: Partial<SlackOAuth> = {
-      joinedChannelIds: nextJoinedChannelIds,
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-    await client.update(nextSlackOAuthData);
   });
 
 export const joinAllChannelPubSub = functions
@@ -179,22 +171,7 @@ export const joinAllChannelPubSub = functions
 
     const isAllPublicChannel = selectedOptions.length > 0;
     if (!isAllPublicChannel) {
-      const conversationListParams = { ...defaultConversationListParams, token };
-      const updatedConversationsListResult = (await web.conversations.list(
-        conversationListParams,
-      )) as ConversationListResult;
-
-      const nextJoinedChannelIds = updatedConversationsListResult.channels
-        .filter((channel) => channel.is_member)
-        .map((channel) => channel.id);
-
-      const slackOAuthData: Partial<SlackOAuth> = {
-        isAllPublicChannel: false,
-        joinedChannelIds: nextJoinedChannelIds,
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-      await client.update(slackOAuthData, true);
-
+      await updateJoinedChannelIds(client, true);
       await web.views.publish({
         token,
         user_id: user.id,
@@ -209,12 +186,7 @@ export const joinAllChannelPubSub = functions
     };
     const conversationsListResult = (await web.conversations.list(conversationListParams)) as ConversationListResult;
 
-    // FIXME: 一度に50以上の場合はレート制限を超える
-    for (const channel of conversationsListResult.channels) {
-      if (!channel.is_member) {
-        await web.conversations.join({ token, channel: channel.id }).catch((e) => logger.error(e));
-      }
-    }
+    await createJoinChannelTask(team.id, conversationsListResult.channels);
 
     const slackOAuthData: Partial<SlackOAuth> = {
       isAllPublicChannel,
@@ -228,3 +200,72 @@ export const joinAllChannelPubSub = functions
       view: createHomeTab(client.slackOAuthData),
     });
   });
+
+export const joinChannelTask = functions.https.onRequest(async (request, response) => {
+  logger.log(request.body);
+  const body: JoinChannelBody = request.body;
+  const client = await SlackClient.new(body.teamId);
+  const {
+    web,
+    bot: { token },
+    slackOAuthData: { isAllPublicChannel },
+  } = client;
+  for (const channelId of body.channelIds) {
+    await web.conversations.join({ token, channel: channelId }).catch((e) => logger.error(e));
+  }
+
+  if (!isAllPublicChannel) {
+    await updateJoinedChannelIds(client);
+  }
+
+  response.send();
+});
+
+const createJoinChannelTask = async (teamId: string, channels: ConversationListResult["channels"]) => {
+  const channelIds = channels.filter((channel) => !channel.is_member).map((channel) => channel.id);
+
+  const bulkChannelIds = chunk(channelIds, BulkChannelThreshold);
+  const tasksClient = new CloudTasksClient();
+  for (const [index, channelIds] of bulkChannelIds.entries()) {
+    const body: JoinChannelBody = { teamId, channelIds };
+    const [response] = await tasksClient.createTask({
+      parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, JoinTaskQueue),
+      task: {
+        scheduleTime: {
+          seconds: dayjs()
+            .add(index * 2, "minute")
+            .unix(),
+        },
+        httpRequest: {
+          headers: { "Content-Type": "application/json" },
+          httpMethod: "POST",
+          url: `${CONFIG.cloud_task.base_url}/joinChannelTask`,
+          body: toBase64(body),
+        },
+      },
+    });
+    logger.log(response);
+  }
+};
+
+const updateJoinedChannelIds = async (client: SlackClient, refetch = false) => {
+  const {
+    web,
+    bot: { token },
+  } = client;
+  const conversationsListResult = (await web.conversations.list({
+    ...defaultConversationListParams,
+    token,
+  })) as ConversationListResult;
+
+  const joinedChannelIds = conversationsListResult.channels
+    .filter((channel) => channel.is_member)
+    .map((channel) => channel.id);
+
+  const slackOAuthData: Partial<SlackOAuth> = {
+    isAllPublicChannel: false,
+    joinedChannelIds,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  await client.update(slackOAuthData, refetch);
+};

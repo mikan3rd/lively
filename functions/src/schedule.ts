@@ -1,10 +1,10 @@
 import { PubSub } from "@google-cloud/pubsub";
 import dayjs from "dayjs";
 
-import { chunk } from "./common/utils";
+import { chunk, toBufferJson } from "./common/utils";
 import { SlackOAuth, SlackOAuthDB, SlackPostedTrendMessage } from "./firebase/firestore";
 import { functions, scheduleFunctions } from "./firebase/functions";
-import { Topic, toBufferJson } from "./firebase/pubsub";
+import { Topic } from "./firebase/pubsub";
 import { SlackClient } from "./slack/client";
 import {
   ChatGetPermalinkResult,

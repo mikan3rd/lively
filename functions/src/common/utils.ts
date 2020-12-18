@@ -10,3 +10,13 @@ export const chunk = <T extends any>(arr: T[], len: number) => {
 
   return chunks;
 };
+
+export const toBufferJson = <T>(data: T) => {
+  const dataJson = JSON.stringify(data);
+  const dataBuffer = Buffer.from(dataJson);
+  return dataBuffer;
+};
+
+export const toBase64 = <T>(data: T) => {
+  return toBufferJson(data).toString("base64");
+};
