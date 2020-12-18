@@ -94,7 +94,7 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
     return;
   }
 
-  const { bulkChannelIds } = await client.getTrendMessageQueue(team.id);
+  const { bulkChannelIds } = await client.getTrendMessageQueue();
   const bulkChannelId = bulkChannelIds.shift();
 
   if (!bulkChannelId) {
@@ -120,7 +120,7 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
     messages = messages.concat(formedMessages);
   }
 
-  const postedTrendMessages = await client.getPostedTrendMessage(team.id);
+  const postedTrendMessages = await client.getPostedTrendMessage();
   const reactionNumThreshold = 10;
   const links: string[] = [];
   const trendMessages: TrendMessageType[] = [];

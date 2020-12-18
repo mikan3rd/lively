@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import { chunk, toBase64, toBufferJson } from "./common/utils";
 import { createHomeTab } from "./event";
 import { CONFIG } from "./firebase/config";
-import { FieldValue, SlackOAuth } from "./firebase/firestore";
+import { SlackOAuth } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
 import { SlackClient } from "./slack/client";
 import { ConversationListResult } from "./types/SlackWebAPICallResult";
@@ -107,7 +107,6 @@ export const selectTargetChannelPubSub = functions
 
     const slackOAuthData: Partial<SlackOAuth> = {
       targetChannelId: channelId,
-      updatedAt: FieldValue.serverTimestamp(),
     };
     await client.update(slackOAuthData);
 
@@ -190,7 +189,6 @@ export const joinAllChannelPubSub = functions
 
     const slackOAuthData: Partial<SlackOAuth> = {
       isAllPublicChannel,
-      updatedAt: FieldValue.serverTimestamp(),
     };
     await client.update(slackOAuthData, true);
 
@@ -265,7 +263,6 @@ const updateJoinedChannelIds = async (client: SlackClient, refetch = false) => {
   const slackOAuthData: Partial<SlackOAuth> = {
     isAllPublicChannel: false,
     joinedChannelIds,
-    updatedAt: FieldValue.serverTimestamp(),
   };
   await client.update(slackOAuthData, refetch);
 };
