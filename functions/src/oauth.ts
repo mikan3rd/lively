@@ -2,7 +2,7 @@ import { InstallProvider } from "@slack/oauth";
 
 import { CONFIG } from "./firebase/config";
 import { FieldValue, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
-import { functions, logger } from "./firebase/functions";
+import { functions } from "./firebase/functions";
 
 const installer = new InstallProvider({
   clientId: CONFIG.slack.client_id,
@@ -50,7 +50,6 @@ export const slackOAuthUrl = functions.https.onRequest(async (request, response)
     ],
     redirectUri: CONFIG.slack.redirect_uri,
   });
-  logger.debug(url);
   response.redirect(url);
 });
 

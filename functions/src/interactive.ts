@@ -4,21 +4,14 @@ import { createMessageAdapter } from "@slack/interactive-messages";
 import dayjs from "dayjs";
 
 import { chunk, toBase64, toBufferJson } from "./common/utils";
-import { createHomeTab } from "./event";
 import { CONFIG } from "./firebase/config";
 import { SlackOAuth } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
+import { Action } from "./slack/actionIds";
 import { SlackClient } from "./slack/client";
+import { createHomeView } from "./slack/createHomeView";
 import { ConversationListResult } from "./types/SlackWebAPICallResult";
 
-export const Action = {
-  SelectTargetChannel: "target_channel",
-  JoinChennelList: "join_channel_list",
-  JoinAllChannel: "join_all_channel",
-  SelectTrendNum: "select_trend_num",
-} as const;
-
-export const CheckedValue = "checked" as const;
 export const JoinTaskQueue = "join-channel" as const;
 
 const BulkChannelThreshold = 40;
@@ -52,7 +45,7 @@ type CheckBoxPayload = CommonPayload<{
   type: "checkboxes";
   selected_options: {
     text: { type: string; verbatim: boolean; text: string };
-    value: typeof CheckedValue;
+    value: string;
   }[];
 }>;
 
@@ -180,7 +173,7 @@ export const joinAllChannelPubSub = functions
       await web.views.publish({
         token,
         user_id: user.id,
-        view: createHomeTab(client.slackOAuthData),
+        view: createHomeView(client.slackOAuthData),
       });
       return;
     }
@@ -201,7 +194,7 @@ export const joinAllChannelPubSub = functions
     await web.views.publish({
       token,
       user_id: user.id,
-      view: createHomeTab(client.slackOAuthData),
+      view: createHomeView(client.slackOAuthData),
     });
   });
 
@@ -230,7 +223,7 @@ export const selectTrendNumPubSub = functions
     await web.views.publish({
       token,
       user_id: user.id,
-      view: createHomeTab(client.slackOAuthData),
+      view: createHomeView(client.slackOAuthData),
     });
   });
 
