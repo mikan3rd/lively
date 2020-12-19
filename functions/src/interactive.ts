@@ -15,6 +15,7 @@ export const Action = {
   SelectTargetChannel: "target_channel",
   JoinChennelList: "join_channel_list",
   JoinAllChannel: "join_all_channel",
+  SelectTrendNum: "select_trend_num",
 } as const;
 
 export const CheckedValue = "checked" as const;
@@ -34,34 +35,33 @@ type CommonPayload<T> = {
     team_id: string;
     username: string;
   };
-  actions: T[];
+  actions: (T & { block_id: string; action_ts: string; action_id: string })[];
 };
 
 type ConversationsSelectPayload = CommonPayload<{
   type: "conversations_select";
-  block_id: string;
-  action_ts: string;
-  action_id: string;
   selected_conversation: string;
 }>;
 
 type MultiChannelsSelectPayload = CommonPayload<{
   type: "multi_channels_select";
-  block_id: string;
-  action_ts: string;
-  action_id: string;
   selected_channels: string[];
 }>;
 
 type CheckBoxPayload = CommonPayload<{
   type: "checkboxes";
-  block_id: string;
-  action_ts: string;
-  action_id: string;
   selected_options: {
     text: { type: string; verbatim: boolean; text: string };
     value: typeof CheckedValue;
   }[];
+}>;
+
+type StaticSelectPayload = CommonPayload<{
+  type: "static_select";
+  selected_option: {
+    text: { type: string; verbatim: boolean; text: string };
+    value: string;
+  };
 }>;
 
 const defaultConversationListParams = {
@@ -88,6 +88,12 @@ slackInteractions.action({ actionId: Action.JoinAllChannel }, async (payload, re
   logger.info(payload);
   const pubSub = new PubSub();
   await pubSub.topic(Action.JoinAllChannel).publish(toBufferJson(payload));
+});
+
+slackInteractions.action({ actionId: Action.SelectTrendNum }, async (payload, respond) => {
+  logger.info(payload);
+  const pubSub = new PubSub();
+  await pubSub.topic(Action.SelectTrendNum).publish(toBufferJson(payload));
 });
 
 export const slackInteractive = functions.https.onRequest(slackInteractions.requestListener());
@@ -199,6 +205,35 @@ export const joinAllChannelPubSub = functions
     });
   });
 
+export const selectTrendNumPubSub = functions
+  .runWith({ maxInstances: 1 })
+  .pubsub.topic(Action.SelectTrendNum)
+  .onPublish(async (message) => {
+    const { team, actions, user }: StaticSelectPayload = message.json;
+    const selectedOption = actions.find((action) => action.action_id === Action.SelectTrendNum)?.selected_option;
+
+    if (!selectedOption) {
+      return;
+    }
+
+    const client = await SlackClient.new(team.id);
+    const {
+      web,
+      bot: { token },
+    } = client;
+
+    const slackOAuthData: Partial<SlackOAuth> = {
+      selectedTrendNum: Number(selectedOption.value),
+    };
+    await client.update(slackOAuthData, true);
+
+    await web.views.publish({
+      token,
+      user_id: user.id,
+      view: createHomeTab(client.slackOAuthData),
+    });
+  });
+
 export const joinChannelTask = functions.https.onRequest(async (request, response) => {
   logger.log(request.body);
   const body: JoinChannelBody = request.body;
@@ -221,7 +256,6 @@ export const joinChannelTask = functions.https.onRequest(async (request, respons
 
 const createJoinChannelTask = async (teamId: string, channels: ConversationListResult["channels"]) => {
   const channelIds = channels.filter((channel) => !channel.is_member).map((channel) => channel.id);
-
   const bulkChannelIds = chunk(channelIds, BulkChannelThreshold);
   const tasksClient = new CloudTasksClient();
   for (const [index, channelIds] of bulkChannelIds.entries()) {

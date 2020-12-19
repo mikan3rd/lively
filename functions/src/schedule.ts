@@ -1,9 +1,11 @@
 import { PubSub } from "@google-cloud/pubsub";
+import { CloudTasksClient } from "@google-cloud/tasks";
 import dayjs from "dayjs";
 
-import { chunk, toBufferJson } from "./common/utils";
+import { chunk, toBase64, toBufferJson } from "./common/utils";
+import { CONFIG } from "./firebase/config";
 import { SlackOAuth, SlackOAuthDB, SlackPostedTrendMessage } from "./firebase/firestore";
-import { functions, scheduleFunctions } from "./firebase/functions";
+import { functions, logger, scheduleFunctions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
 import { SlackClient } from "./slack/client";
 import {
@@ -13,6 +15,10 @@ import {
 } from "./types/SlackWebAPICallResult";
 
 type TrendMessageType = { channelId: string; ts: string; reactionNum: number };
+type PostTrendMessageBody = { teamId: string; channelIds: string[] };
+
+const PostTrendMessageQueue = "post-trend-message" as const;
+const BulkHistoryThreshold = 40;
 
 export const batchTrendMessageQueueScheduler = scheduleFunctions()("0 * * * *").onRun(async (context) => {
   const docs = await SlackOAuthDB.get();
@@ -57,54 +63,49 @@ export const createTrendMessageQueuePubSub = functions.pubsub
     const sortedChannels = conversationsListResult.channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
     const channelIds = sortedChannels.filter((channel) => channel.is_member).map((channel) => channel.id);
 
-    const bulkChannelThreshold = 30;
-    const bulkChannelIds = chunk(channelIds, bulkChannelThreshold).map((channelIds) => ({ channelIds }));
-    await client.setTrendMessageQueue({ teamId: team.id, bulkChannelIds });
-  });
-
-export const batchTrendMessageScheduler = scheduleFunctions()("10,20,30 * * * *").onRun(async (context) => {
-  const docs = await SlackOAuthDB.get();
-  const oauthList: SlackOAuth[] = [];
-  docs.forEach((doc) => {
-    oauthList.push(doc.data() as SlackOAuth);
-  });
-
-  const pubSub = new PubSub();
-  for (const oauthData of oauthList) {
-    if (!oauthData.targetChannelId) {
-      continue;
+    const bulkChannelIds = chunk(channelIds, BulkHistoryThreshold);
+    const tasksClient = new CloudTasksClient();
+    for (const [index, channelIds] of bulkChannelIds.entries()) {
+      const body: PostTrendMessageBody = { teamId: team.id, channelIds };
+      const [response] = await tasksClient.createTask({
+        parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, PostTrendMessageQueue),
+        task: {
+          scheduleTime: {
+            seconds: dayjs()
+              .add(index * 2, "minute")
+              .unix(),
+          },
+          httpRequest: {
+            headers: { "Content-Type": "application/json" },
+            httpMethod: "POST",
+            url: `${CONFIG.cloud_task.base_url}/postTrendMessageTask`,
+            body: toBase64(body),
+          },
+        },
+      });
+      logger.log(response);
     }
-    await pubSub.topic(Topic.PostTrendMessage).publish(toBufferJson(oauthData));
-  }
-});
+  });
 
-export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMessage).onPublish(async (message) => {
-  const {
-    installation: { team },
-  }: SlackOAuth = message.json;
+export const postTrendMessageTask = functions.https.onRequest(async (request, response) => {
+  logger.log(request.body);
+  const body: PostTrendMessageBody = request.body;
 
-  const client = await SlackClient.new(team.id);
+  const client = await SlackClient.new(body.teamId);
   const {
     web,
     bot: { token },
-    slackOAuthData: { targetChannelId },
+    slackOAuthData: { targetChannelId, selectedTrendNum = 10 },
   } = client;
 
   if (!targetChannelId) {
     return;
   }
 
-  const { bulkChannelIds } = await client.getTrendMessageQueue();
-  const bulkChannelId = bulkChannelIds.shift();
-
-  if (!bulkChannelId) {
-    return;
-  }
-
   const oldestTime = dayjs().subtract(2, "day").unix();
   let messages: TrendMessageType[] = [];
 
-  for (const channelId of bulkChannelId.channelIds) {
+  for (const channelId of body.channelIds) {
     const conversationHistoryResult = (await web.conversations.history({
       token,
       channel: channelId,
@@ -121,11 +122,10 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
   }
 
   const postedTrendMessages = await client.getPostedTrendMessage();
-  const reactionNumThreshold = 10;
   const links: string[] = [];
   const trendMessages: TrendMessageType[] = [];
   for (const message of messages) {
-    if (message.reactionNum < reactionNumThreshold) {
+    if (message.reactionNum < selectedTrendNum) {
       continue;
     }
 
@@ -165,5 +165,4 @@ export const postTrendMessagePubSub = functions.pubsub.topic(Topic.PostTrendMess
   }));
   postedTrendMessages.messages = postedTrendMessages.messages.concat(postedMessages);
   await client.setPostedTrendMessage(postedTrendMessages);
-  await client.setTrendMessageQueue({ teamId: team.id, bulkChannelIds });
 });
