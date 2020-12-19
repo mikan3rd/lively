@@ -4,10 +4,10 @@ import dayjs from "dayjs";
 import { chunk, toBase64 } from "../common/utils";
 import { CONFIG } from "../firebase/config";
 import { logger } from "../firebase/functions";
+import { JoinChannelBody } from "../https";
 import { ConversationListResult } from "../types/SlackWebAPICallResult";
 
 export const JoinChannelQueue = "join-channel" as const;
-export type JoinChannelBody = { teamId: string; channelIds: string[] };
 
 const BulkChannelThreshold = 40;
 
