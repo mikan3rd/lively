@@ -78,7 +78,7 @@ export const createTrendMessageQueuePubSub = functions.pubsub
           httpRequest: {
             headers: { "Content-Type": "application/json" },
             httpMethod: "POST",
-            url: `${CONFIG.cloud_task.base_url}/joinChannelTask`,
+            url: `${CONFIG.cloud_task.base_url}/postTrendMessageTask`,
             body: toBase64(body),
           },
         },
@@ -87,7 +87,7 @@ export const createTrendMessageQueuePubSub = functions.pubsub
     }
   });
 
-export const postTrendMessagePubSub = functions.https.onRequest(async (request, response) => {
+export const postTrendMessageTask = functions.https.onRequest(async (request, response) => {
   logger.log(request.body);
   const body: PostTrendMessageBody = request.body;
 
@@ -95,7 +95,7 @@ export const postTrendMessagePubSub = functions.https.onRequest(async (request, 
   const {
     web,
     bot: { token },
-    slackOAuthData: { targetChannelId },
+    slackOAuthData: { targetChannelId, selectedTrendNum = 10 },
   } = client;
 
   if (!targetChannelId) {
@@ -122,11 +122,10 @@ export const postTrendMessagePubSub = functions.https.onRequest(async (request, 
   }
 
   const postedTrendMessages = await client.getPostedTrendMessage();
-  const reactionNumThreshold = 10;
   const links: string[] = [];
   const trendMessages: TrendMessageType[] = [];
   for (const message of messages) {
-    if (message.reactionNum < reactionNumThreshold) {
+    if (message.reactionNum < selectedTrendNum) {
       continue;
     }
 

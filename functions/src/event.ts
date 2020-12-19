@@ -1,5 +1,5 @@
 import { verifyRequestSignature } from "@slack/events-api";
-import { Checkboxes, KnownBlock, Option, View } from "@slack/web-api";
+import { Checkboxes, Option, SectionBlock, View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
 import { SlackOAuth } from "./firebase/firestore";
@@ -112,9 +112,9 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
 });
 
 export const createHomeTab = (slackOAuthData: SlackOAuth) => {
-  const { isAllPublicChannel, joinedChannelIds, targetChannelId } = slackOAuthData;
+  const { isAllPublicChannel = false, joinedChannelIds, targetChannelId, selectedTrendNum = 10 } = slackOAuthData;
 
-  const joinChannelListBlock: KnownBlock = {
+  const joinChannelListBlock: SectionBlock = {
     type: "section",
     text: {
       type: "mrkdwn",
@@ -174,6 +174,19 @@ export const createHomeTab = (slackOAuthData: SlackOAuth) => {
     };
   }
 
+  const trendNumList = [5, 10, 15, 20, 30, 40, 50, 100];
+  const trendNumOptions: Option[] = trendNumList.map((num) => {
+    const numString = String(num);
+    return {
+      text: {
+        type: "plain_text",
+        text: numString,
+      },
+      value: numString,
+    };
+  });
+  const initialTrendOption = trendNumOptions.find((option) => Number(option.value) === selectedTrendNum);
+
   const view: View = {
     type: "home",
     blocks: [
@@ -199,10 +212,23 @@ export const createHomeTab = (slackOAuthData: SlackOAuth) => {
         type: "actions",
         elements: [joinAllChannelCheckbox],
       },
+      { type: "divider" },
       {
-        type: "divider",
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "人気投稿に必要なリアクション数の設定",
+        },
+        accessory: {
+          action_id: Action.SelectTrendNum,
+          type: "static_select",
+          initial_option: initialTrendOption,
+          options: trendNumOptions,
+        },
       },
+      { type: "divider" },
     ],
   };
+  logger.log(view);
   return view;
 };

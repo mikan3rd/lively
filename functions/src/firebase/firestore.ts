@@ -17,6 +17,7 @@ export type SlackOAuth = {
   targetChannelId?: string;
   joinedChannelIds?: string[];
   isAllPublicChannel?: boolean;
+  selectedTrendNum?: number;
 } & TimeStamp;
 
 export type SlackPostedTrendMessage = {
