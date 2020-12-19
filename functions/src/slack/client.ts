@@ -6,8 +6,6 @@ import {
   SlackOAuthDB,
   SlackPostedTrendMessage,
   SlackPostedTrendMessageDB,
-  SlackTrendMessageQueue,
-  SlackTrendQueueDB,
   TimeStamp,
 } from "../firebase/firestore";
 
@@ -68,26 +66,6 @@ export class SlackClient {
   async refetch() {
     const slackOAuthData = await SlackClient.getSlackOAuthData(this.teamId);
     this.slackOAuthData = slackOAuthData;
-  }
-
-  async setTrendMessageQueue(data: PartiallyPartial<SlackTrendMessageQueue, keyof TimeStamp>) {
-    data.updatedAt = FieldValue.serverTimestamp();
-    if (!data.createdAt) {
-      data.createdAt = FieldValue.serverTimestamp();
-    }
-    await SlackTrendQueueDB.doc(data.teamId).set(data, { merge: true });
-  }
-
-  async getTrendMessageQueue() {
-    const doc = await SlackTrendQueueDB.doc(this.teamId).get();
-    if (doc.exists) {
-      return doc.data() as SlackTrendMessageQueue;
-    }
-    const defaultData: PartiallyPartial<SlackTrendMessageQueue, keyof TimeStamp> = {
-      teamId: this.teamId,
-      bulkChannelIds: [],
-    };
-    return defaultData;
   }
 
   async setPostedTrendMessage(data: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp>) {

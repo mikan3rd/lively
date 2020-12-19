@@ -221,7 +221,6 @@ export const joinChannelTask = functions.https.onRequest(async (request, respons
 
 const createJoinChannelTask = async (teamId: string, channels: ConversationListResult["channels"]) => {
   const channelIds = channels.filter((channel) => !channel.is_member).map((channel) => channel.id);
-
   const bulkChannelIds = chunk(channelIds, BulkChannelThreshold);
   const tasksClient = new CloudTasksClient();
   for (const [index, channelIds] of bulkChannelIds.entries()) {
