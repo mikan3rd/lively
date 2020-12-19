@@ -1,22 +1,16 @@
 import { PubSub } from "@google-cloud/pubsub";
-import { CloudTasksClient } from "@google-cloud/tasks";
 import { createMessageAdapter } from "@slack/interactive-messages";
-import dayjs from "dayjs";
 
-import { chunk, toBase64, toBufferJson } from "./common/utils";
+import { toBufferJson } from "./common/utils";
 import { CONFIG } from "./firebase/config";
 import { SlackOAuth } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
+import { createHomeView } from "./services/createHomeView";
+import { JoinChannelBody, createJoinChannelTask } from "./services/createJoinChannelTask";
+import { getConversationsList } from "./services/getConversationsList";
+import { updateJoinedChannelIds } from "./services/updateJoinedChannelIds";
 import { Action } from "./slack/actionIds";
 import { SlackClient } from "./slack/client";
-import { createHomeView } from "./slack/createHomeView";
-import { ConversationListResult } from "./types/SlackWebAPICallResult";
-
-export const JoinTaskQueue = "join-channel" as const;
-
-const BulkChannelThreshold = 40;
-
-type JoinChannelBody = { teamId: string; channelIds: string[] };
 
 type CommonPayload<T> = {
   team: {
@@ -56,12 +50,6 @@ type StaticSelectPayload = CommonPayload<{
     value: string;
   };
 }>;
-
-const defaultConversationListParams = {
-  limit: 1000,
-  exclude_archived: true,
-  types: "public_channel",
-};
 
 const slackInteractions = createMessageAdapter(CONFIG.slack.signing_secret);
 
@@ -134,11 +122,7 @@ export const joinChannelListPubSub = functions
       bot: { token },
     } = client;
 
-    const conversationListParams = {
-      ...defaultConversationListParams,
-      token,
-    };
-    const conversationsListResult = (await web.conversations.list(conversationListParams)) as ConversationListResult;
+    const conversationsListResult = await getConversationsList(client);
 
     const joinChannels = conversationsListResult.channels.filter((channel) => selectedChannelIds.includes(channel.id));
     await createJoinChannelTask(team.id, joinChannels);
@@ -178,11 +162,7 @@ export const joinAllChannelPubSub = functions
       return;
     }
 
-    const conversationListParams = {
-      ...defaultConversationListParams,
-      token,
-    };
-    const conversationsListResult = (await web.conversations.list(conversationListParams)) as ConversationListResult;
+    const conversationsListResult = await getConversationsList(client);
 
     await createJoinChannelTask(team.id, conversationsListResult.channels);
 
@@ -246,50 +226,3 @@ export const joinChannelTask = functions.https.onRequest(async (request, respons
 
   response.send();
 });
-
-const createJoinChannelTask = async (teamId: string, channels: ConversationListResult["channels"]) => {
-  const channelIds = channels.filter((channel) => !channel.is_member).map((channel) => channel.id);
-  const bulkChannelIds = chunk(channelIds, BulkChannelThreshold);
-  const tasksClient = new CloudTasksClient();
-  for (const [index, channelIds] of bulkChannelIds.entries()) {
-    const body: JoinChannelBody = { teamId, channelIds };
-    const [response] = await tasksClient.createTask({
-      parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, JoinTaskQueue),
-      task: {
-        scheduleTime: {
-          seconds: dayjs()
-            .add(index * 2, "minute")
-            .unix(),
-        },
-        httpRequest: {
-          headers: { "Content-Type": "application/json" },
-          httpMethod: "POST",
-          url: `${CONFIG.cloud_task.base_url}/joinChannelTask`,
-          body: toBase64(body),
-        },
-      },
-    });
-    logger.log(response);
-  }
-};
-
-const updateJoinedChannelIds = async (client: SlackClient, refetch = false) => {
-  const {
-    web,
-    bot: { token },
-  } = client;
-  const conversationsListResult = (await web.conversations.list({
-    ...defaultConversationListParams,
-    token,
-  })) as ConversationListResult;
-
-  const joinedChannelIds = conversationsListResult.channels
-    .filter((channel) => channel.is_member)
-    .map((channel) => channel.id);
-
-  const slackOAuthData: Partial<SlackOAuth> = {
-    isAllPublicChannel: false,
-    joinedChannelIds,
-  };
-  await client.update(slackOAuthData, refetch);
-};
