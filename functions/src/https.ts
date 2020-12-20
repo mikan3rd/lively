@@ -12,6 +12,7 @@ export type PostTrendMessageBody = { teamId: string; channelIds: string[] };
 type TrendMessageType = { channelId: string; ts: string; reactionNum: number };
 
 export const joinChannelTask = functions.https.onRequest(async (request, response) => {
+  logger.log(request.headers);
   logger.log(request.body);
   const body: JoinChannelBody = request.body;
   const client = await SlackClient.new(body.teamId);
@@ -32,6 +33,7 @@ export const joinChannelTask = functions.https.onRequest(async (request, respons
 });
 
 export const postTrendMessageTask = functions.https.onRequest(async (request, response) => {
+  logger.log(request.headers);
   logger.log(request.body);
   const body: PostTrendMessageBody = request.body;
 
@@ -43,6 +45,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   } = client;
 
   if (!targetChannelId) {
+    response.send();
     return;
   }
 
@@ -57,6 +60,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
       limit: 1000,
       oldest: String(oldestTime),
     })) as ConversationHistoryResult;
+
     const formedMessages = conversationHistoryResult.messages.map((message) => ({
       channelId,
       ts: message.ts,
@@ -109,4 +113,6 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   }));
   postedTrendMessages.messages = postedTrendMessages.messages.concat(postedMessages);
   await client.setPostedTrendMessage(postedTrendMessages);
+
+  response.send();
 });
