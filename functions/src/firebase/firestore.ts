@@ -1,5 +1,5 @@
 import { Installation } from "@slack/oauth";
-import * as admin from "firebase-admin";
+import admin from "firebase-admin";
 
 export const db = admin.firestore();
 export const { FieldValue } = admin.firestore;
@@ -8,9 +8,16 @@ export const SlackOAuthDB = db.collection("slackOAuth");
 export const SlackPostedTrendMessageDB = db.collection("slackPostedTrendMessage");
 
 export type TimeStamp = {
-  updatedAt: FirebaseFirestore.FieldValue;
-  createdAt: FirebaseFirestore.FieldValue;
+  updatedAt: FirebaseFirestore.Timestamp;
+  createdAt: FirebaseFirestore.Timestamp;
 };
+
+type UpdateTimeStamp = {
+  updatedAt: FirebaseFirestore.Timestamp | FirebaseFirestore.FieldValue;
+  createdAt: FirebaseFirestore.Timestamp | FirebaseFirestore.FieldValue;
+};
+
+export type FirestoreParams<T> = Partial<Omit<T, keyof TimeStamp> & UpdateTimeStamp>;
 
 export type SlackOAuth = {
   installation: Installation<"v1" | "v2", false>;

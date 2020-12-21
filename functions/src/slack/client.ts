@@ -2,6 +2,7 @@ import { WebClient } from "@slack/web-api";
 
 import {
   FieldValue,
+  FirestoreParams,
   SlackOAuth,
   SlackOAuthDB,
   SlackPostedTrendMessage,
@@ -23,9 +24,10 @@ type Constructor = {
 };
 
 export class SlackClient {
-  slackOAuthData: SlackOAuth;
   web: WebClient;
   bot: BotType;
+  slackOAuthData: SlackOAuth;
+  slackPostedTrendMessage?: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp>;
 
   constructor({ slackOAuthData, web, bot }: Constructor) {
     this.slackOAuthData = slackOAuthData;
@@ -52,9 +54,9 @@ export class SlackClient {
     return slackOAuthData;
   }
 
-  async update(data: Partial<SlackOAuth>, refetch = false) {
+  async update(data: FirestoreParams<SlackOAuth>, refetch = false) {
     data.updatedAt = FieldValue.serverTimestamp();
-    if (!data.createdAt) {
+    if (!this.slackOAuthData.createdAt) {
       data.createdAt = FieldValue.serverTimestamp();
     }
     await SlackOAuthDB.doc(this.teamId).set(data, { merge: true });
@@ -68,24 +70,25 @@ export class SlackClient {
     this.slackOAuthData = slackOAuthData;
   }
 
-  async setPostedTrendMessage(data: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp>) {
+  async setPostedTrendMessage(data: FirestoreParams<SlackPostedTrendMessage>) {
     data.updatedAt = FieldValue.serverTimestamp();
-    if (!data.createdAt) {
+    if (!this.slackPostedTrendMessage?.createdAt) {
       data.createdAt = FieldValue.serverTimestamp();
     }
-    await SlackPostedTrendMessageDB.doc(data.teamId).set(data, { merge: true });
+    await SlackPostedTrendMessageDB.doc(this.teamId).set(data, { merge: true });
   }
 
   async getPostedTrendMessage() {
     const doc = await SlackPostedTrendMessageDB.doc(this.teamId).get();
-    if (doc.exists) {
-      return doc.data() as SlackPostedTrendMessage;
-    }
-    const defaultData: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp> = {
+    let data: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp> = {
       teamId: this.teamId,
       messages: [],
     };
-    return defaultData;
+    if (doc.exists) {
+      data = doc.data() as SlackPostedTrendMessage;
+    }
+    this.slackPostedTrendMessage = data;
+    return data;
   }
 
   get teamId() {

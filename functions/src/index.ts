@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import * as admin from "firebase-admin";
+import admin from "firebase-admin";
 import "dayjs/locale/ja";
 
 dayjs.locale("ja");

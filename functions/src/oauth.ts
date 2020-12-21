@@ -1,7 +1,7 @@
 import { InstallProvider } from "@slack/oauth";
 
 import { CONFIG } from "./firebase/config";
-import { FieldValue, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
+import { FieldValue, FirestoreParams, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { functions } from "./firebase/functions";
 
 const installer = new InstallProvider({
@@ -12,7 +12,7 @@ const installer = new InstallProvider({
   installationStore: {
     storeInstallation: async (installation) => {
       const SlackOAuthDoc = await SlackOAuthDB.doc(installation.team.id).get();
-      let data: Partial<SlackOAuth> = {};
+      let data: FirestoreParams<SlackOAuth> = {};
       if (SlackOAuthDoc.exists) {
         data = {
           installation,
