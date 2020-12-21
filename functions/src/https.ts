@@ -69,10 +69,20 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
     messages = messages.concat(formedMessages);
   }
 
+  const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
+
   const postedTrendMessages = await client.getPostedTrendMessage();
   const links: string[] = [];
   const trendMessages: TrendMessageType[] = [];
-  for (const message of messages) {
+
+  const maxPostNum = 3;
+  let postNum = 0;
+
+  for (const message of sortedMessages) {
+    if (postNum > maxPostNum) {
+      break;
+    }
+
     if (message.reactionNum < selectedTrendNum) {
       continue;
     }
@@ -93,6 +103,8 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
 
     links.push(permalinkResult.permalink);
     trendMessages.push(message);
+
+    postNum += 1;
   }
 
   for (const [i, link] of links.entries()) {
