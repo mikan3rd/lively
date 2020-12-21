@@ -57,7 +57,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
   const client = await SlackClient.new(team_id);
   const {
     slackOAuthData,
-    slackOAuthData: { targetChannelId },
+    slackOAuthData: { targetChannelId, isAllPublicChannel },
     web,
     bot: { token },
   } = client;
@@ -87,7 +87,9 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
       });
     }
 
-    await web.conversations.join({ token, channel: channel.id });
+    if (isAllPublicChannel) {
+      await web.conversations.join({ token, channel: channel.id });
+    }
   }
 
   if (type === "emoji_changed") {
