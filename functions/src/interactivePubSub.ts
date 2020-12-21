@@ -20,9 +20,9 @@ type CommonPayload<T> = {
   actions: (T & { block_id: string; action_ts: string; action_id: string })[];
 };
 
-type ConversationsSelectPayload = CommonPayload<{
-  type: "conversations_select";
-  selected_conversation: string;
+type ChannelsSelectPayload = CommonPayload<{
+  type: "channels_select";
+  selected_channel: string;
 }>;
 
 type MultiChannelsSelectPayload = CommonPayload<{
@@ -50,8 +50,8 @@ export const selectTargetChannelPubSub = functions
   .runWith({ maxInstances: 1 })
   .pubsub.topic(Action.SelectTargetChannel)
   .onPublish(async (message) => {
-    const { team, actions }: ConversationsSelectPayload = message.json;
-    const channelId = actions.find((action) => action.action_id === Action.SelectTargetChannel)?.selected_conversation;
+    const { team, actions }: ChannelsSelectPayload = message.json;
+    const channelId = actions.find((action) => action.action_id === Action.SelectTargetChannel)?.selected_channel;
     if (!channelId) {
       return;
     }
