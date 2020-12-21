@@ -1,4 +1,4 @@
-import cloudFunctions from "firebase-functions";
+import * as cloudFunctions from "firebase-functions";
 
 const REGION = "asia-northeast1" as const;
 const TIMEZONE = "Asia/Tokyo" as const;

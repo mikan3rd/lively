@@ -1,4 +1,4 @@
-import cloudFunctions from "firebase-functions";
+import * as cloudFunctions from "firebase-functions";
 
 type Config = {
   slack: {
