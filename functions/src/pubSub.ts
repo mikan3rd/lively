@@ -29,8 +29,8 @@ export const createTrendMessageQueuePubSub = functions.pubsub
       return;
     }
 
-    const conversationsListResult = await getConversationsList(client);
-    const sortedChannels = conversationsListResult.channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
+    const { channels } = await getConversationsList(client);
+    const sortedChannels = channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
     const channelIds = sortedChannels.filter((channel) => channel.is_member).map((channel) => channel.id);
 
     const bulkChannelIds = chunk(channelIds, BulkHistoryThreshold);

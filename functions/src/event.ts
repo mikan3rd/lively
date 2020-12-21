@@ -46,7 +46,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     body: request.rawBody.toString(),
   });
 
-  logger.info(request.body);
+  logger.debug(request.body);
 
   const body: EventBody = request.body;
   const {

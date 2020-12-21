@@ -122,6 +122,6 @@ export const createHomeView = (slackOAuthData: SlackOAuth) => {
       { type: "divider" },
     ],
   };
-  logger.log(view);
+  logger.debug(view);
   return view;
 };

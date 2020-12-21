@@ -9,25 +9,25 @@ import { Action } from "./slack/actionIds";
 const slackInteractions = createMessageAdapter(CONFIG.slack.signing_secret);
 
 slackInteractions.action({ actionId: Action.SelectTargetChannel }, async (payload, respond) => {
-  logger.info(payload);
+  logger.debug(payload);
   const pubSub = new PubSub();
   await pubSub.topic(Action.SelectTargetChannel).publish(toBufferJson(payload));
 });
 
 slackInteractions.action({ actionId: Action.JoinChennelList }, async (payload, respond) => {
-  logger.info(payload);
+  logger.debug(payload);
   const pubSub = new PubSub();
   await pubSub.topic(Action.JoinChennelList).publish(toBufferJson(payload));
 });
 
 slackInteractions.action({ actionId: Action.JoinAllChannel }, async (payload, respond) => {
-  logger.info(payload);
+  logger.debug(payload);
   const pubSub = new PubSub();
   await pubSub.topic(Action.JoinAllChannel).publish(toBufferJson(payload));
 });
 
 slackInteractions.action({ actionId: Action.SelectTrendNum }, async (payload, respond) => {
-  logger.info(payload);
+  logger.debug(payload);
   const pubSub = new PubSub();
   await pubSub.topic(Action.SelectTrendNum).publish(toBufferJson(payload));
 });
