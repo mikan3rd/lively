@@ -46,7 +46,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     body: request.rawBody.toString(),
   });
 
-  logger.info(request.body);
+  logger.debug(request.body);
 
   const body: EventBody = request.body;
   const {
@@ -100,7 +100,7 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
       if (targetChannelId) {
         await web.chat.postMessage({
           channel: targetChannelId,
-          text: `:new: リアクション :${name}: が追加されました！ みんなも使ってみよう！`,
+          text: `:new: リアクション \`:${name}:\` が追加されました！ みんなも使ってみよう！`,
           attachments: [{ blocks: [{ type: "image", image_url: value, alt_text: value }] }],
           token,
         });

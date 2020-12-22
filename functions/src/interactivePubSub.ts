@@ -89,12 +89,12 @@ export const joinChannelListPubSub = functions
       bot: { token },
     } = client;
 
-    const conversationsListResult = await getConversationsList(client);
+    const { channels } = await getConversationsList(client);
 
-    const joinChannels = conversationsListResult.channels.filter((channel) => selectedChannelIds.includes(channel.id));
+    const joinChannels = channels.filter((channel) => selectedChannelIds.includes(channel.id));
     await createJoinChannelTask(team.id, joinChannels);
 
-    for (const channel of conversationsListResult.channels) {
+    for (const channel of channels) {
       if (!selectedChannelIds.includes(channel.id) && channel.is_member) {
         await web.conversations.leave({ token, channel: channel.id }).catch((e) => logger.error(e));
       }
@@ -129,9 +129,9 @@ export const joinAllChannelPubSub = functions
       return;
     }
 
-    const conversationsListResult = await getConversationsList(client);
+    const { channels } = await getConversationsList(client);
 
-    await createJoinChannelTask(team.id, conversationsListResult.channels);
+    await createJoinChannelTask(team.id, channels);
 
     const slackOAuthData: Partial<SlackOAuth> = {
       isAllPublicChannel,
