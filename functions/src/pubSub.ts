@@ -4,13 +4,13 @@ import dayjs from "dayjs";
 import { chunk, toBase64 } from "./common/utils";
 import { CONFIG } from "./firebase/config";
 import { SlackOAuth } from "./firebase/firestore";
-import { functions, logger } from "./firebase/functions";
+import { functions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
+import { Queue } from "./firebase/task";
 import { PostTrendMessageBody } from "./https";
 import { getConversationsList } from "./services/getConversationsList";
 import { SlackClient } from "./slack/client";
 
-const PostTrendMessageQueue = "post-trend-message" as const;
 const BulkHistoryThreshold = 40;
 
 export const createTrendMessageQueuePubSub = functions.pubsub
@@ -37,8 +37,8 @@ export const createTrendMessageQueuePubSub = functions.pubsub
     const tasksClient = new CloudTasksClient();
     for (const [index, channelIds] of bulkChannelIds.entries()) {
       const body: PostTrendMessageBody = { teamId: team.id, channelIds };
-      const [response] = await tasksClient.createTask({
-        parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, PostTrendMessageQueue),
+      await tasksClient.createTask({
+        parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, Queue.PostTrendMessage),
         task: {
           scheduleTime: {
             seconds: dayjs()
@@ -53,6 +53,5 @@ export const createTrendMessageQueuePubSub = functions.pubsub
           },
         },
       });
-      logger.log(response);
     }
   });

@@ -70,6 +70,11 @@ export class SlackClient {
     this.slackOAuthData = slackOAuthData;
   }
 
+  async deleteAll() {
+    await SlackOAuthDB.doc(this.teamId).delete();
+    await SlackPostedTrendMessageDB.doc(this.teamId).delete();
+  }
+
   async setPostedTrendMessage(data: FirestoreParams<SlackPostedTrendMessage>) {
     data.updatedAt = FieldValue.serverTimestamp();
     if (!this.slackPostedTrendMessage?.createdAt) {
