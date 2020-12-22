@@ -8,6 +8,7 @@ import { ChatGetPermalinkResult, ConversationHistoryResult } from "./types/Slack
 
 export type JoinChannelBody = { teamId: string; channelIds: string[] };
 export type PostTrendMessageBody = { teamId: string; channelIds: string[] };
+export type SendFirstMessageBody = { teamId: string; userId: string };
 
 type TrendMessageType = { channelId: string; ts: string; reactionNum: number };
 
@@ -125,6 +126,29 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   }));
   postedTrendMessages.messages = postedTrendMessages.messages.concat(postedMessages);
   await client.setPostedTrendMessage(postedTrendMessages);
+
+  response.send();
+});
+
+export const sendFirstmessageTask = functions.https.onRequest(async (request, response) => {
+  logger.log(request.headers);
+  logger.log(request.body);
+
+  const body: SendFirstMessageBody = request.body;
+
+  const client = await SlackClient.new(body.teamId);
+  const {
+    web,
+    bot: { token },
+  } = client;
+
+  if (body.userId) {
+    await web.chat.postMessage({
+      channel: body.userId,
+      text: `インストールありがとうございます！\n左上のタブのホームから初期設定をしましょう！`,
+      token,
+    });
+  }
 
   response.send();
 });

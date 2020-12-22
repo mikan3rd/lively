@@ -36,7 +36,11 @@ type EmojiChanged = EventCommonJson<{
   event_ts: string;
 }>;
 
-type EventBody = AppHomeOpened | ChannelCreated | EmojiChanged;
+type TokensRevoked = EventCommonJson<{
+  type: "tokens_revoked";
+}>;
+
+type EventBody = AppHomeOpened | ChannelCreated | EmojiChanged | TokensRevoked;
 
 export const slackEvent = functions.https.onRequest(async (request, response) => {
   verifyRequestSignature({
@@ -106,6 +110,10 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
         });
       }
     }
+  }
+
+  if (type === "tokens_revoked") {
+    client.deleteAll();
   }
 
   response.send(request.body.challenge);

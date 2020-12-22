@@ -3,11 +3,9 @@ import dayjs from "dayjs";
 
 import { chunk, toBase64 } from "../common/utils";
 import { CONFIG } from "../firebase/config";
-import { logger } from "../firebase/functions";
+import { Queue } from "../firebase/task";
 import { JoinChannelBody } from "../https";
 import { ConversationListResult } from "../types/SlackWebAPICallResult";
-
-export const JoinChannelQueue = "join-channel" as const;
 
 const BulkChannelThreshold = 40;
 
@@ -17,8 +15,8 @@ export const createJoinChannelTask = async (teamId: string, channels: Conversati
   const tasksClient = new CloudTasksClient();
   for (const [index, channelIds] of bulkChannelIds.entries()) {
     const body: JoinChannelBody = { teamId, channelIds };
-    const [response] = await tasksClient.createTask({
-      parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, JoinChannelQueue),
+    await tasksClient.createTask({
+      parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, Queue.JoinChannel),
       task: {
         scheduleTime: {
           seconds: dayjs()
@@ -33,6 +31,5 @@ export const createJoinChannelTask = async (teamId: string, channels: Conversati
         },
       },
     });
-    logger.log(response);
   }
 };
