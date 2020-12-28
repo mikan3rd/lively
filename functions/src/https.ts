@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 
 import { SlackPostedTrendMessage } from "./firebase/firestore";
 import { functions, logger } from "./firebase/functions";
+import { Queue } from "./firebase/task";
 import { updateJoinedChannelIds } from "./services/updateJoinedChannelIds";
 import { SlackClient } from "./slack/client";
 import { ChatGetPermalinkResult, ConversationHistoryResult } from "./types/SlackWebAPICallResult";
@@ -13,9 +14,14 @@ export type SendFirstMessageBody = { teamId: string; userId: string };
 type TrendMessageType = { channelId: string; ts: string; reactionNum: number };
 
 export const joinChannelTask = functions.https.onRequest(async (request, response) => {
-  logger.log(request.headers);
+  if (request.headers["x-cloudtasks-queuename"] !== Queue.JoinChannel) {
+    response.status(400).send();
+    return;
+  }
+
   logger.log(request.body);
   const body: JoinChannelBody = request.body;
+
   const client = await SlackClient.new(body.teamId);
   const {
     web,
@@ -34,7 +40,11 @@ export const joinChannelTask = functions.https.onRequest(async (request, respons
 });
 
 export const postTrendMessageTask = functions.https.onRequest(async (request, response) => {
-  logger.log(request.headers);
+  if (request.headers["x-cloudtasks-queuename"] !== Queue.PostTrendMessage) {
+    response.status(400).send();
+    return;
+  }
+
   logger.log(request.body);
   const body: PostTrendMessageBody = request.body;
 
@@ -131,9 +141,12 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
 });
 
 export const sendFirstmessageTask = functions.https.onRequest(async (request, response) => {
-  logger.log(request.headers);
-  logger.log(request.body);
+  if (request.headers["x-cloudtasks-queuename"] !== Queue.SendFirstMessage) {
+    response.status(400).send();
+    return;
+  }
 
+  logger.log(request.body);
   const body: SendFirstMessageBody = request.body;
 
   const client = await SlackClient.new(body.teamId);
