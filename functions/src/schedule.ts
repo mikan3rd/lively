@@ -20,3 +20,19 @@ export const batchTrendMessageQueueScheduler = scheduleFunctions()("0 * * * *").
     await pubSub.topic(Topic.BulkTrendMessageQueue).publish(toBufferJson(oauthData));
   }
 });
+
+export const batchRecommendChannelScheduler = scheduleFunctions()("0 9 * * mon").onRun(async (context) => {
+  const docs = await SlackOAuthDB.get();
+  const oauthList: SlackOAuth[] = [];
+  docs.forEach((doc) => {
+    oauthList.push(doc.data() as SlackOAuth);
+  });
+
+  const pubSub = new PubSub();
+  for (const oauthData of oauthList) {
+    if (!oauthData.targetChannelId || oauthData.isAllPublicChannel) {
+      continue;
+    }
+    await pubSub.topic(Topic.RecommendChannel).publish(toBufferJson(oauthData));
+  }
+});

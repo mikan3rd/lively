@@ -5,6 +5,8 @@ import {
   FirestoreParams,
   SlackOAuth,
   SlackOAuthDB,
+  SlackPostedRecommendChannel,
+  SlackPostedRecommendChannelDB,
   SlackPostedTrendMessage,
   SlackPostedTrendMessageDB,
   TimeStamp,
@@ -28,6 +30,7 @@ export class SlackClient {
   bot: BotType;
   slackOAuthData: SlackOAuth;
   slackPostedTrendMessage?: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp>;
+  slackPostedRecommendChannelIds?: PartiallyPartial<SlackPostedRecommendChannel, keyof TimeStamp>;
 
   constructor({ slackOAuthData, web, bot }: Constructor) {
     this.slackOAuthData = slackOAuthData;
@@ -93,6 +96,27 @@ export class SlackClient {
       data = doc.data() as SlackPostedTrendMessage;
     }
     this.slackPostedTrendMessage = data;
+    return data;
+  }
+
+  async setPostedRecommendChannelIds(data: FirestoreParams<SlackPostedRecommendChannel>) {
+    data.updatedAt = FieldValue.serverTimestamp();
+    if (!this.slackPostedTrendMessage?.createdAt) {
+      data.createdAt = FieldValue.serverTimestamp();
+    }
+    await SlackPostedRecommendChannelDB.doc(this.teamId).set(data, { merge: true });
+  }
+
+  async getPostedRecommendChannelIds() {
+    const doc = await SlackPostedRecommendChannelDB.doc(this.teamId).get();
+    let data: PartiallyPartial<SlackPostedRecommendChannel, keyof TimeStamp> = {
+      teamId: this.teamId,
+      postedChannelIds: [],
+    };
+    if (doc.exists) {
+      data = doc.data() as SlackPostedRecommendChannel;
+    }
+    this.slackPostedRecommendChannelIds = data;
     return data;
   }
 

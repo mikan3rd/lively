@@ -9,6 +9,7 @@ import { Topic } from "./firebase/pubsub";
 import { Queue } from "./firebase/task";
 import { PostTrendMessageBody } from "./https";
 import { getConversationsList } from "./services/getConversationsList";
+import { Action } from "./slack/actionIds";
 import { SlackClient } from "./slack/client";
 
 const BulkHistoryThreshold = 40;
@@ -33,6 +34,10 @@ export const createTrendMessageQueuePubSub = functions.pubsub
     const sortedChannels = channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
     const channelIds = sortedChannels.filter((channel) => channel.is_member).map((channel) => channel.id);
 
+    if (channelIds.length === 0) {
+      return;
+    }
+
     const bulkChannelIds = chunk(channelIds, BulkHistoryThreshold);
     const tasksClient = new CloudTasksClient();
     for (const [index, channelIds] of bulkChannelIds.entries()) {
@@ -55,3 +60,70 @@ export const createTrendMessageQueuePubSub = functions.pubsub
       });
     }
   });
+
+export const postRecommendChannelPubSub = functions.pubsub.topic(Topic.RecommendChannel).onPublish(async (message) => {
+  const {
+    installation: { team },
+  }: SlackOAuth = message.json;
+
+  const client = await SlackClient.new(team.id);
+
+  const {
+    web,
+    bot: { token },
+    slackOAuthData: { targetChannelId, isAllPublicChannel },
+  } = client;
+
+  if (isAllPublicChannel) {
+    return;
+  }
+
+  if (!targetChannelId) {
+    return;
+  }
+
+  const { postedChannelIds } = await client.getPostedRecommendChannelIds();
+
+  const { channels } = await getConversationsList(client);
+  const sortedChannels = channels
+    .filter((channel) => !channel.is_member && !postedChannelIds.includes(channel.id))
+    .sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
+
+  if (sortedChannels.length === 0) {
+    if (postedChannelIds.length > 0) {
+      await client.setPostedRecommendChannelIds({ teamId: team.id, postedChannelIds: [] });
+    }
+    return;
+  }
+
+  const targetChannel = sortedChannels[0];
+
+  await web.chat.postMessage({
+    token,
+    channel: targetChannelId,
+    text: "",
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `チャンネル <#${targetChannel.id}> と連携しませんか？`,
+        },
+        accessory: {
+          type: "button",
+          style: "primary",
+          text: {
+            type: "plain_text",
+            text: "連携する",
+            emoji: true,
+          },
+          action_id: Action.JoinChannelButton,
+          value: targetChannel.id,
+        },
+      },
+    ],
+  });
+
+  postedChannelIds.push(targetChannel.id);
+  await client.setPostedRecommendChannelIds({ teamId: team.id, postedChannelIds });
+});

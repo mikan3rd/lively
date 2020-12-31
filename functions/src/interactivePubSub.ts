@@ -7,7 +7,7 @@ import { updateJoinedChannelIds } from "./services/updateJoinedChannelIds";
 import { Action } from "./slack/actionIds";
 import { SlackClient } from "./slack/client";
 
-type CommonPayload<T> = {
+type CommonBasePayload = {
   team: {
     id: string;
   };
@@ -17,8 +17,17 @@ type CommonPayload<T> = {
     team_id: string;
     username: string;
   };
-  actions: (T & { block_id: string; action_ts: string; action_id: string })[];
 };
+
+type CommonBaseAction = {
+  block_id: string;
+  action_ts: string;
+  action_id: string;
+};
+
+type CommonPayload<T> = {
+  actions: (T & CommonBaseAction)[];
+} & CommonBasePayload;
 
 type ChannelsSelectPayload = CommonPayload<{
   type: "channels_select";
@@ -45,6 +54,21 @@ type StaticSelectPayload = CommonPayload<{
     value: string;
   };
 }>;
+
+type MessageButtonPayload = {
+  message: {
+    type: "message";
+    ts: string;
+  };
+  channel: {
+    id: string;
+  };
+  actions: ({
+    type: "button";
+    action_id: string;
+    value: string;
+  } & CommonBaseAction)[];
+} & CommonBasePayload;
 
 export const selectTargetChannelPubSub = functions
   .runWith({ maxInstances: 1 })
@@ -171,5 +195,50 @@ export const selectTrendNumPubSub = functions
       token,
       user_id: user.id,
       view: createHomeView(client.slackOAuthData),
+    });
+  });
+
+export const joinChannelButtonPubSub = functions
+  .runWith({ maxInstances: 1 })
+  .pubsub.topic(Action.JoinChannelButton)
+  .onPublish(async (message) => {
+    const {
+      team,
+      channel,
+      message: { ts },
+      actions,
+    }: MessageButtonPayload = message.json;
+    const tagrettChannelId = actions.find((action) => action.action_id === Action.JoinChannelButton)?.value;
+    if (!tagrettChannelId) {
+      return;
+    }
+
+    const client = await SlackClient.new(team.id);
+    const {
+      web,
+      bot: { token },
+      slackOAuthData: { isAllPublicChannel },
+    } = client;
+
+    await web.conversations.join({ token, channel: tagrettChannelId });
+
+    if (!isAllPublicChannel) {
+      await updateJoinedChannelIds(client);
+    }
+
+    await web.chat.update({
+      token,
+      channel: channel.id,
+      ts,
+      text: "",
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `~チャンネル <#${tagrettChannelId}> と連携しませんか？~\n*連携しました！*\nチャンネル欄にあるアプリを選択してさらに設定ができます`,
+          },
+        },
+      ],
     });
   });
