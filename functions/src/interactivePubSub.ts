@@ -236,7 +236,7 @@ export const joinChannelButtonPubSub = functions
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `~チャンネル <#${tagrettChannelId}> と連携しませんか？~\n*連携しました！*`,
+            text: `~チャンネル <#${tagrettChannelId}> と連携しませんか？~\n*連携しました！*\nチャンネル欄にあるアプリを選択してさらに設定ができます`,
           },
         },
       ],
