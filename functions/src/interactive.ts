@@ -32,4 +32,10 @@ slackInteractions.action({ actionId: Action.SelectTrendNum }, async (payload, re
   await pubSub.topic(Action.SelectTrendNum).publish(toBufferJson(payload));
 });
 
+slackInteractions.action({ actionId: Action.JoinChannelButton }, async (payload, respond) => {
+  logger.debug(payload);
+  const pubSub = new PubSub();
+  await pubSub.topic(Action.JoinChannelButton).publish(toBufferJson(payload));
+});
+
 export const slackInteractive = functions.https.onRequest(slackInteractions.requestListener());

@@ -7,7 +7,7 @@ import { updateJoinedChannelIds } from "./services/updateJoinedChannelIds";
 import { Action } from "./slack/actionIds";
 import { SlackClient } from "./slack/client";
 
-type CommonPayload<T> = {
+type CommonBasePayload = {
   team: {
     id: string;
   };
@@ -17,8 +17,17 @@ type CommonPayload<T> = {
     team_id: string;
     username: string;
   };
-  actions: (T & { block_id: string; action_ts: string; action_id: string })[];
 };
+
+type CommonBaseAction = {
+  block_id: string;
+  action_ts: string;
+  action_id: string;
+};
+
+type CommonPayload<T> = {
+  actions: (T & CommonBaseAction)[];
+} & CommonBasePayload;
 
 type ChannelsSelectPayload = CommonPayload<{
   type: "channels_select";
@@ -45,6 +54,18 @@ type StaticSelectPayload = CommonPayload<{
     value: string;
   };
 }>;
+
+type MessageButtonPayload = {
+  message: {
+    type: "message";
+    ts: string;
+  };
+  actions: ({
+    type: "button";
+    action_id: string;
+    value: string;
+  } & CommonBaseAction)[];
+} & CommonBasePayload;
 
 export const selectTargetChannelPubSub = functions
   .runWith({ maxInstances: 1 })
@@ -172,4 +193,16 @@ export const selectTrendNumPubSub = functions
       user_id: user.id,
       view: createHomeView(client.slackOAuthData),
     });
+  });
+
+export const joinChannelButton = functions
+  .runWith({ maxInstances: 1 })
+  .pubsub.topic(Action.JoinChannelButton)
+  .onPublish(async (message) => {
+    const { team, actions }: MessageButtonPayload = message.json;
+    const channelId = actions.find((action) => action.action_id === Action.JoinChannelButton)?.value;
+    if (!channelId) {
+      return;
+    }
+    const client = await SlackClient.new(team.id);
   });

@@ -24,6 +24,10 @@ export interface ConversationHistoryResult extends WebAPICallResult {
   }[];
 }
 
+export interface ConversationMembersResult extends WebAPICallResult {
+  members: string[];
+}
+
 export interface ChatGetPermalinkResult extends WebAPICallResult {
   channel: string;
   permalink: string;
