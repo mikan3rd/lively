@@ -60,6 +60,9 @@ type MessageButtonPayload = {
     type: "message";
     ts: string;
   };
+  channel: {
+    id: string;
+  };
   actions: ({
     type: "button";
     action_id: string;
@@ -195,14 +198,47 @@ export const selectTrendNumPubSub = functions
     });
   });
 
-export const joinChannelButton = functions
+export const joinChannelButtonPubSub = functions
   .runWith({ maxInstances: 1 })
   .pubsub.topic(Action.JoinChannelButton)
   .onPublish(async (message) => {
-    const { team, actions }: MessageButtonPayload = message.json;
-    const channelId = actions.find((action) => action.action_id === Action.JoinChannelButton)?.value;
-    if (!channelId) {
+    const {
+      team,
+      channel,
+      message: { ts },
+      actions,
+    }: MessageButtonPayload = message.json;
+    const tagrettChannelId = actions.find((action) => action.action_id === Action.JoinChannelButton)?.value;
+    if (!tagrettChannelId) {
       return;
     }
+
     const client = await SlackClient.new(team.id);
+    const {
+      web,
+      bot: { token },
+      slackOAuthData: { isAllPublicChannel },
+    } = client;
+
+    await web.conversations.join({ token, channel: tagrettChannelId });
+
+    if (!isAllPublicChannel) {
+      await updateJoinedChannelIds(client);
+    }
+
+    await web.chat.update({
+      token,
+      channel: channel.id,
+      ts,
+      text: "",
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `~チャンネル <#${tagrettChannelId}> と連携しませんか？~\n*連携しました！*`,
+          },
+        },
+      ],
+    });
   });

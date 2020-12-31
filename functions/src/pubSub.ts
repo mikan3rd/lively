@@ -122,5 +122,8 @@ export const postRecommendChannelPubSub = functions.https.onRequest(async (reque
     ],
   });
 
+  postedChannelIds.push(targetChannel.id);
+  await client.setPostedRecommendChannelIds({ teamId, postedChannelIds });
+
   response.send();
 });
