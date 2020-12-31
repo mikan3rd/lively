@@ -61,9 +61,12 @@ export const createTrendMessageQueuePubSub = functions.pubsub
     }
   });
 
-export const postRecommendChannelPubSub = functions.https.onRequest(async (request, response) => {
-  const teamId = "";
-  const client = await SlackClient.new(teamId);
+export const postRecommendChannelPubSub = functions.pubsub.topic(Topic.RecommendChannel).onPublish(async (message) => {
+  const {
+    installation: { team },
+  }: SlackOAuth = message.json;
+
+  const client = await SlackClient.new(team.id);
 
   const {
     web,
@@ -72,25 +75,24 @@ export const postRecommendChannelPubSub = functions.https.onRequest(async (reque
   } = client;
 
   if (isAllPublicChannel) {
-    response.send();
     return;
   }
 
   if (!targetChannelId) {
-    response.send();
     return;
   }
 
   const { postedChannelIds } = await client.getPostedRecommendChannelIds();
 
   const { channels } = await getConversationsList(client);
-  const sortedChannels = channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
+  const sortedChannels = channels
+    .filter((channel) => !channel.is_member && !postedChannelIds.includes(channel.id))
+    .sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
 
   if (sortedChannels.length === 0) {
     if (postedChannelIds.length > 0) {
-      await client.setPostedRecommendChannelIds({ teamId, postedChannelIds: [] });
+      await client.setPostedRecommendChannelIds({ teamId: team.id, postedChannelIds: [] });
     }
-    response.send();
     return;
   }
 
@@ -123,7 +125,5 @@ export const postRecommendChannelPubSub = functions.https.onRequest(async (reque
   });
 
   postedChannelIds.push(targetChannel.id);
-  await client.setPostedRecommendChannelIds({ teamId, postedChannelIds });
-
-  response.send();
+  await client.setPostedRecommendChannelIds({ teamId: team.id, postedChannelIds });
 });
