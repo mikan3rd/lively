@@ -1,16 +1,16 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
 import dayjs from "dayjs";
 
-import { chunk, toBase64 } from "./common/utils";
-import { CONFIG } from "./firebase/config";
-import { SlackOAuth } from "./firebase/firestore";
-import { functions } from "./firebase/functions";
-import { Topic } from "./firebase/pubsub";
-import { Queue } from "./firebase/task";
-import { PostTrendMessageBody } from "./https";
-import { getConversationsList } from "./services/getConversationsList";
-import { Action } from "./slack/actionIds";
-import { SlackClient } from "./slack/client";
+import { chunk, toBase64 } from "@/common/utils";
+import { CONFIG } from "@/firebase/config";
+import { SlackOAuth } from "@/firebase/firestore";
+import { functions } from "@/firebase/functions";
+import { Topic } from "@/firebase/pubsub";
+import { Queue } from "@/firebase/task";
+import { PostTrendMessageBody } from "@/https";
+import { getConversationsList } from "@/services/getConversationsList";
+import { Action } from "@/slack/actionIds";
+import { SlackClient } from "@/slack/client";
 
 const BulkHistoryThreshold = 40;
 

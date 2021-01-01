@@ -1,11 +1,11 @@
-import { SlackOAuth } from "./firebase/firestore";
-import { functions, logger } from "./firebase/functions";
-import { createHomeView } from "./services/createHomeView";
-import { createJoinChannelTask } from "./services/createJoinChannelTask";
-import { getConversationsList } from "./services/getConversationsList";
-import { updateJoinedChannelIds } from "./services/updateJoinedChannelIds";
-import { Action } from "./slack/actionIds";
-import { SlackClient } from "./slack/client";
+import { SlackOAuth } from "@/firebase/firestore";
+import { functions, logger } from "@/firebase/functions";
+import { createHomeView } from "@/services/createHomeView";
+import { createJoinChannelTask } from "@/services/createJoinChannelTask";
+import { getConversationsList } from "@/services/getConversationsList";
+import { updateJoinedChannelIds } from "@/services/updateJoinedChannelIds";
+import { Action } from "@/slack/actionIds";
+import { SlackClient } from "@/slack/client";
 
 type CommonBasePayload = {
   team: {
