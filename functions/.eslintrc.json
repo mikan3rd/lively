@@ -43,6 +43,11 @@
         "tagNamePreference":{
            "returns":"return"
         }
-     }
+     },
+     "import/resolver": {
+      "typescript": {
+        "project": "tsconfig.json"
+      }
+    }
   }
 }

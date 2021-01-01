@@ -1,11 +1,11 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
 import dayjs from "dayjs";
 
-import { chunk, toBase64 } from "../common/utils";
-import { CONFIG } from "../firebase/config";
-import { Queue } from "../firebase/task";
-import { JoinChannelBody } from "../https";
-import { ConversationListResult } from "../types/SlackWebAPICallResult";
+import { chunk, toBase64 } from "@/common/utils";
+import { CONFIG } from "@/firebase/config";
+import { Queue } from "@/firebase/task";
+import { JoinChannelBody } from "@/https";
+import { ConversationListResult } from "@/types/SlackWebAPICallResult";
 
 const BulkChannelThreshold = 40;
 

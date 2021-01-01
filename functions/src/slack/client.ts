@@ -10,7 +10,7 @@ import {
   SlackPostedTrendMessage,
   SlackPostedTrendMessageDB,
   TimeStamp,
-} from "../firebase/firestore";
+} from "@/firebase/firestore";
 
 type BotType = {
   token: string;

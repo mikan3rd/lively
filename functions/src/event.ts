@@ -1,9 +1,9 @@
 import { verifyRequestSignature } from "@slack/events-api";
 
-import { CONFIG } from "./firebase/config";
-import { functions, logger } from "./firebase/functions";
-import { createHomeView } from "./services/createHomeView";
-import { SlackClient } from "./slack/client";
+import { CONFIG } from "@/firebase/config";
+import { functions, logger } from "@/firebase/functions";
+import { createHomeView } from "@/services/createHomeView";
+import { SlackClient } from "@/slack/client";
 
 type EventCommonJson<T> = {
   api_app_id: string;

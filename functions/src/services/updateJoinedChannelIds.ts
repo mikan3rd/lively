@@ -1,7 +1,6 @@
-import { SlackOAuth } from "../firebase/firestore";
-import { SlackClient } from "../slack/client";
-
-import { getConversationsList } from "./getConversationsList";
+import { SlackOAuth } from "@/firebase/firestore";
+import { getConversationsList } from "@/services/getConversationsList";
+import { SlackClient } from "@/slack/client";
 
 export const updateJoinedChannelIds = async (client: SlackClient, refetch = false) => {
   const { channels } = await getConversationsList(client);

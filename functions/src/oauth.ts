@@ -2,12 +2,12 @@ import { CloudTasksClient } from "@google-cloud/tasks";
 import { InstallProvider } from "@slack/oauth";
 import dayjs from "dayjs";
 
-import { toBase64 } from "./common/utils";
-import { CONFIG } from "./firebase/config";
-import { FieldValue, FirestoreParams, SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
-import { functions } from "./firebase/functions";
-import { Queue } from "./firebase/task";
-import { SendFirstMessageBody } from "./https";
+import { toBase64 } from "@/common/utils";
+import { CONFIG } from "@/firebase/config";
+import { FieldValue, FirestoreParams, SlackOAuth, SlackOAuthDB } from "@/firebase/firestore";
+import { functions } from "@/firebase/functions";
+import { Queue } from "@/firebase/task";
+import { SendFirstMessageBody } from "@/https";
 
 const installer = new InstallProvider({
   clientId: CONFIG.slack.client_id,

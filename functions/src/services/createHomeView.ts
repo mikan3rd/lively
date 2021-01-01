@@ -1,8 +1,8 @@
 import { Checkboxes, Option, SectionBlock, View } from "@slack/web-api";
 
-import { SlackOAuth } from "../firebase/firestore";
-import { logger } from "../firebase/functions";
-import { Action } from "../slack/actionIds";
+import { SlackOAuth } from "@/firebase/firestore";
+import { logger } from "@/firebase/functions";
+import { Action } from "@/slack/actionIds";
 
 export const createHomeView = (slackOAuthData: SlackOAuth) => {
   const { isAllPublicChannel = false, joinedChannelIds, targetChannelId, selectedTrendNum = 10 } = slackOAuthData;

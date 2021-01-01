@@ -1,11 +1,11 @@
 import dayjs from "dayjs";
 
-import { SlackPostedTrendMessage } from "./firebase/firestore";
-import { functions, logger } from "./firebase/functions";
-import { Queue } from "./firebase/task";
-import { updateJoinedChannelIds } from "./services/updateJoinedChannelIds";
-import { SlackClient } from "./slack/client";
-import { ChatGetPermalinkResult, ConversationHistoryResult } from "./types/SlackWebAPICallResult";
+import { SlackPostedTrendMessage } from "@/firebase/firestore";
+import { functions, logger } from "@/firebase/functions";
+import { Queue } from "@/firebase/task";
+import { updateJoinedChannelIds } from "@/services/updateJoinedChannelIds";
+import { SlackClient } from "@/slack/client";
+import { ChatGetPermalinkResult, ConversationHistoryResult } from "@/types/SlackWebAPICallResult";
 
 export type JoinChannelBody = { teamId: string; channelIds: string[] };
 export type PostTrendMessageBody = { teamId: string; channelIds: string[] };

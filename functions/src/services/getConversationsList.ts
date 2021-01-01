@@ -1,5 +1,5 @@
-import { SlackClient } from "../slack/client";
-import { ConversationListResult } from "../types/SlackWebAPICallResult";
+import { SlackClient } from "@/slack/client";
+import { ConversationListResult } from "@/types/SlackWebAPICallResult";
 
 const defaultConversationListParams = {
   limit: 1000,
