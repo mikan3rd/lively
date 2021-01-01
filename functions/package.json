@@ -25,14 +25,14 @@
     "@slack/interactive-messages": "1.7.0",
     "@slack/oauth": "1.4.0",
     "@slack/web-api": "5.14.0",
-    "dayjs": "1.9.7",
+    "dayjs": "1.9.8",
     "firebase-admin": "9.4.2",
     "firebase-functions": "3.13.0"
   },
   "devDependencies": {
     "@types/node": "12.19.11",
-    "@typescript-eslint/eslint-plugin": "4.11.0",
-    "@typescript-eslint/parser": "4.11.0",
+    "@typescript-eslint/eslint-plugin": "4.11.1",
+    "@typescript-eslint/parser": "4.11.1",
     "eslint": "7.16.0",
     "eslint-config-prettier": "7.1.0",
     "eslint-plugin-import": "2.22.1",
