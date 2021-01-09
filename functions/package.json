@@ -25,7 +25,7 @@
     "@slack/interactive-messages": "1.7.1",
     "@slack/oauth": "1.4.0",
     "@slack/web-api": "5.15.0",
-    "dayjs": "1.10.2",
+    "dayjs": "1.10.3",
     "firebase-admin": "9.4.2",
     "firebase-functions": "3.13.0"
   },
