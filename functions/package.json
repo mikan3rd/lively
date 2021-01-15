@@ -22,7 +22,7 @@
     "@google-cloud/pubsub": "2.7.0",
     "@google-cloud/tasks": "2.1.3",
     "@slack/events-api": "2.3.4",
-    "@slack/interactive-messages": "1.7.1",
+    "@slack/interactive-messages": "2.0.0",
     "@slack/oauth": "1.4.0",
     "@slack/web-api": "5.15.0",
     "dayjs": "1.10.3",
