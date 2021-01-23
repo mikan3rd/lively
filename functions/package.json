@@ -21,7 +21,7 @@
   "dependencies": {
     "@google-cloud/pubsub": "2.8.0",
     "@google-cloud/tasks": "2.3.0",
-    "@slack/events-api": "2.3.4",
+    "@slack/events-api": "3.0.0",
     "@slack/interactive-messages": "2.0.0",
     "@slack/oauth": "1.4.0",
     "@slack/web-api": "5.15.0",
