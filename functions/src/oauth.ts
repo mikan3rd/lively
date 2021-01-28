@@ -1,5 +1,5 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
-import { InstallProvider } from "@slack/oauth";
+import { InstallProvider, Installation, InstallationQuery } from "@slack/oauth";
 import dayjs from "dayjs";
 
 import { toBase64 } from "./common/utils";
@@ -15,8 +15,10 @@ const installer = new InstallProvider({
   stateSecret: CONFIG.slack.state_secret,
   authVersion: "v2",
   installationStore: {
-    storeInstallation: async (installation) => {
-      const SlackOAuthDoc = await SlackOAuthDB.doc(installation.team.id).get();
+    storeInstallation: async (_installation) => {
+      const installation = _installation as Installation<"v2", false>;
+      const teamId = installation.team.id;
+      const SlackOAuthDoc = await SlackOAuthDB.doc().get();
       let data: FirestoreParams<SlackOAuth> = {};
       if (SlackOAuthDoc.exists) {
         data = {
@@ -32,7 +34,7 @@ const installer = new InstallProvider({
       }
 
       const tasksClient = new CloudTasksClient();
-      const body: SendFirstMessageBody = { teamId: installation.team.id, userId: installation.user.id };
+      const body: SendFirstMessageBody = { teamId, userId: installation.user.id };
       await tasksClient.createTask({
         parent: tasksClient.queuePath(CONFIG.cloud_task.project, CONFIG.cloud_task.location, Queue.SendFirstMessage),
         task: {
@@ -47,10 +49,10 @@ const installer = new InstallProvider({
           },
         },
       });
-
-      await SlackOAuthDB.doc(installation.team.id).set(data, { merge: true });
+      await SlackOAuthDB.doc(teamId).set(data, { merge: true });
     },
-    fetchInstallation: async (installQuery) => {
+    fetchInstallation: async (_installQuery) => {
+      const installQuery = _installQuery as InstallationQuery<false>;
       const SlackOAuthDoc = await SlackOAuthDB.doc(installQuery.teamId).get();
       const data = SlackOAuthDoc.data() as SlackOAuth;
       return data.installation;

@@ -21,7 +21,7 @@ type UpdateTimeStamp = {
 export type FirestoreParams<T> = Partial<Omit<T, keyof TimeStamp> & UpdateTimeStamp>;
 
 export type SlackOAuth = {
-  installation: Installation<"v1" | "v2", false>;
+  installation: Installation<"v2", false>;
   targetChannelId?: string;
   joinedChannelIds?: string[];
   isAllPublicChannel?: boolean;
