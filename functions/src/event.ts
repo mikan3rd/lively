@@ -50,6 +50,11 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
     body: request.rawBody.toString(),
   });
 
+  if (request.headers["X-Slack-Retry-Num"] && request.headers["X-Slack-Retry-Reason"] === "http_timeout") {
+    response.send();
+    return;
+  }
+
   logger.debug(request.body);
 
   const body: EventBody = request.body;
