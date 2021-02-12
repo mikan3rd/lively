@@ -19,7 +19,7 @@
     "node-forge": "0.10.0"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "2.8.0",
+    "@google-cloud/pubsub": "2.9.0",
     "@google-cloud/tasks": "2.3.0",
     "@slack/events-api": "3.0.0",
     "@slack/interactive-messages": "2.0.0",
