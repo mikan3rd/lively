@@ -11,7 +11,18 @@ export type JoinChannelBody = { teamId: string; channelIds: string[] };
 export type PostTrendMessageBody = { teamId: string; channelIds: string[] };
 export type SendFirstMessageBody = { teamId: string; userId: string };
 
-type TrendMessageType = { channelId: string; ts: string; reactionNum: number };
+type TrendMessageType = {
+  channelId: string;
+  ts: string;
+  reactions: {
+    name: string;
+    users: string[];
+    count: number;
+  }[];
+  reactionNum: number;
+};
+
+type TrendMessageWithLinkType = TrendMessageType & { link: string };
 
 export const joinChannelTask = functions.https.onRequest(async (request, response) => {
   if (request.headers["x-cloudtasks-queuename"] !== Queue.JoinChannel) {
@@ -75,6 +86,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
     const formedMessages = conversationHistoryResult.messages.map((message) => ({
       channelId,
       ts: message.ts,
+      reactions: message.reactions ?? [],
       reactionNum: message.reactions?.reduce((acc, reaction) => acc + reaction.count, 0) ?? 0,
     }));
     messages = messages.concat(formedMessages);
@@ -83,8 +95,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
 
   const postedTrendMessages = await client.getPostedTrendMessage();
-  const links: string[] = [];
-  const trendMessages: TrendMessageType[] = [];
+  const trendMessages: TrendMessageWithLinkType[] = [];
 
   const maxPostNum = 3;
   let postNum = 0;
@@ -112,17 +123,14 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
       message_ts: message.ts,
     })) as ChatGetPermalinkResult;
 
-    links.push(permalinkResult.permalink);
-    trendMessages.push(message);
+    trendMessages.push({ ...message, link: permalinkResult.permalink });
 
     postNum += 1;
   }
 
-  for (const [i, link] of links.entries()) {
-    let text = link;
-    if (i === 0) {
-      text = `:tada: この投稿が盛り上がってるよ！\n${link}`;
-    }
+  for (const { link, reactions } of trendMessages) {
+    const sortedReactions = reactions.sort((a, b) => (a.count > b.count ? -1 : 1));
+    const text = `:${sortedReactions[0].name}: で人気の投稿はこちら！\n${link}`;
     await web.chat.postMessage({
       channel: targetChannelId,
       text,
