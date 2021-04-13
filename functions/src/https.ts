@@ -129,8 +129,8 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   }
 
   for (const { link, reactions } of trendMessages) {
-    const sortedReactions = reactions.sort((a, b) => (a.count > b.count ? -1 : 1));
-    const text = `:${sortedReactions[0].name}: で人気の投稿はこちら！\n${link}`;
+    const reactionNames = reactions.map((reaction) => `:${reaction.name}:`);
+    const text = `${reactionNames.join("")}で人気の投稿はこちら！\n${link}`;
     await web.chat.postMessage({
       channel: targetChannelId,
       text,
