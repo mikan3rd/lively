@@ -128,9 +128,17 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
     postNum += 1;
   }
 
-  for (const { link, reactions } of trendMessages) {
-    const reactionNames = reactions.map((reaction) => `:${reaction.name}:`);
-    const text = `${reactionNames.join("")}で人気の投稿はこちら！\n${link}`;
+  for (const [i, { link, reactions }] of trendMessages.entries()) {
+    if (i === 0) {
+      await web.chat.postMessage({
+        channel: targetChannelId,
+        text: `:tada: この投稿が盛り上がってるよ！`,
+        token,
+      });
+    }
+
+    const reactionText = reactions.reduce((prev, current) => (prev += `:${current.name}: `.repeat(current.count)), "");
+    const text = `${reactionText}\n${link}`;
     await web.chat.postMessage({
       channel: targetChannelId,
       text,
