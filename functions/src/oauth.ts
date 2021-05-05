@@ -44,7 +44,7 @@ const installer = new InstallProvider({
           httpRequest: {
             headers: { "Content-Type": "application/json" },
             httpMethod: "POST",
-            url: `${CONFIG.cloud_task.base_url}/sendFirstmessageTask`,
+            url: `${CONFIG.cloud_task.base_url}/sendFirstMessageTask`,
             body: toBase64(body),
           },
         },

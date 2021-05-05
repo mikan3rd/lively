@@ -7,12 +7,12 @@ import { SlackOAuth } from "./firebase/firestore";
 import { functions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
 import { Queue } from "./firebase/task";
-import { PostTrendMessageBody } from "./https";
+import { CountWeeklyTrendMessageBody, PostTrendMessageBody, PostWeeklyTrendMessageBody } from "./https";
 import { getConversationsList } from "./services/getConversationsList";
 import { Action } from "./slack/actionIds";
 import { SlackClient } from "./slack/client";
 
-const BulkHistoryThreshold = 40;
+const BulkHistoryThreshold = 20;
 
 export const createTrendMessageQueuePubSub = functions.pubsub
   .topic(Topic.BulkTrendMessageQueue)
@@ -40,6 +40,7 @@ export const createTrendMessageQueuePubSub = functions.pubsub
 
     const bulkChannelIds = chunk(channelIds, BulkHistoryThreshold);
     const tasksClient = new CloudTasksClient();
+    const interval = 2;
     for (const [index, channelIds] of bulkChannelIds.entries()) {
       const body: PostTrendMessageBody = { teamId: team.id, channelIds };
       await tasksClient.createTask({
@@ -47,7 +48,7 @@ export const createTrendMessageQueuePubSub = functions.pubsub
         task: {
           scheduleTime: {
             seconds: dayjs()
-              .add(index * 2, "minute")
+              .add(index * interval, "minute")
               .unix(),
           },
           httpRequest: {
@@ -59,6 +60,80 @@ export const createTrendMessageQueuePubSub = functions.pubsub
         },
       });
     }
+  });
+
+export const postWeeklyTrendMessagePubSub = functions.pubsub
+  .topic(Topic.WeeklyTrendMessage)
+  .onPublish(async (message) => {
+    const {
+      installation: { team },
+    }: SlackOAuth = message.json;
+
+    const client = await SlackClient.new(team.id);
+    const {
+      slackOAuthData: { targetChannelId },
+    } = client;
+
+    if (!targetChannelId) {
+      return;
+    }
+
+    const { channels } = await getConversationsList(client);
+    const sortedChannels = channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
+    const channelIds = sortedChannels.filter((channel) => channel.is_member).map((channel) => channel.id);
+
+    if (channelIds.length === 0) {
+      return;
+    }
+
+    const bulkChannelIds = chunk(channelIds, BulkHistoryThreshold);
+    const tasksClient = new CloudTasksClient();
+    const interval = 3;
+    for (const [index, channelIds] of bulkChannelIds.entries()) {
+      const body: CountWeeklyTrendMessageBody = { teamId: team.id, channelIds };
+      await tasksClient.createTask({
+        parent: tasksClient.queuePath(
+          CONFIG.cloud_task.project,
+          CONFIG.cloud_task.location,
+          Queue.CountWeeklyTrendMessage,
+        ),
+        task: {
+          scheduleTime: {
+            seconds: dayjs()
+              .add(index * interval, "minute")
+              .unix(),
+          },
+          httpRequest: {
+            headers: { "Content-Type": "application/json" },
+            httpMethod: "POST",
+            url: `${CONFIG.cloud_task.base_url}/countWeeklyTrendMessageTask`,
+            body: toBase64(body),
+          },
+        },
+      });
+    }
+
+    const body: PostWeeklyTrendMessageBody = { teamId: team.id };
+    await tasksClient.createTask({
+      parent: tasksClient.queuePath(
+        CONFIG.cloud_task.project,
+        CONFIG.cloud_task.location,
+        Queue.PostWeeklyTrendMessage,
+      ),
+      task: {
+        scheduleTime: {
+          seconds: dayjs()
+            .add(bulkChannelIds.length * interval, "minute")
+            .unix(),
+        },
+        httpRequest: {
+          headers: { "Content-Type": "application/json" },
+          httpMethod: "POST",
+          url: `${CONFIG.cloud_task.base_url}/postWeeklyTrendMessageTask`,
+          body: toBase64(body),
+        },
+      },
+    });
   });
 
 export const postRecommendChannelPubSub = functions.pubsub.topic(Topic.RecommendChannel).onPublish(async (message) => {

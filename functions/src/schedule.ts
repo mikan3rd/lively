@@ -21,7 +21,23 @@ export const batchTrendMessageQueueScheduler = scheduleFunctions()("0 * * * *").
   }
 });
 
-export const batchRecommendChannelScheduler = scheduleFunctions()("0 9 * * mon").onRun(async (context) => {
+export const batchWeeklyTrendMessageScheduler = scheduleFunctions()("0 9 * * mon").onRun(async (context) => {
+  const docs = await SlackOAuthDB.get();
+  const oauthList: SlackOAuth[] = [];
+  docs.forEach((doc) => {
+    oauthList.push(doc.data() as SlackOAuth);
+  });
+
+  const pubSub = new PubSub();
+  for (const oauthData of oauthList) {
+    if (!oauthData.targetChannelId) {
+      continue;
+    }
+    await pubSub.topic(Topic.WeeklyTrendMessage).publish(toBufferJson(oauthData));
+  }
+});
+
+export const batchRecommendChannelScheduler = scheduleFunctions()("0 8 * * mon").onRun(async (context) => {
   const docs = await SlackOAuthDB.get();
   const oauthList: SlackOAuth[] = [];
   docs.forEach((doc) => {
