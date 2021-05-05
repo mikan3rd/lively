@@ -1,9 +1,11 @@
 import { verifyRequestSignature } from "@slack/events-api";
+import { View } from "@slack/web-api";
 
 import { CONFIG } from "./firebase/config";
 import { functions, logger } from "./firebase/functions";
 import { createHomeView } from "./services/createHomeView";
 import { SlackClient } from "./slack/client";
+import { UsersInfoResult } from "./types/SlackWebAPICallResult";
 
 type EventCommonJson<T> = {
   api_app_id: string;
@@ -77,10 +79,29 @@ export const slackEvent = functions.https.onRequest(async (request, response) =>
       event: { user },
     } = body as AppHomeOpened;
 
+    const {
+      user: { is_restricted },
+    } = (await web.users.info({ token, user })) as UsersInfoResult;
+
+    let view: View = {
+      type: "home",
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "plain_text",
+            text: "ゲストユーザーは設定を変更できません",
+          },
+        },
+      ],
+    };
+    if (!is_restricted) {
+      view = createHomeView(slackOAuthData);
+    }
     await web.views.publish({
       token,
       user_id: user,
-      view: createHomeView(slackOAuthData),
+      view,
     });
   }
 

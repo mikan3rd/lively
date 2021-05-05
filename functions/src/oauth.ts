@@ -72,6 +72,7 @@ export const slackOAuthUrl = functions.https.onRequest(async (request, response)
       "emoji:read",
       "reactions:read",
       "im:write",
+      "users:read",
     ],
     redirectUri: CONFIG.slack.redirect_uri,
   });
