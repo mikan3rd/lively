@@ -9,6 +9,8 @@ import { ChatGetPermalinkResult, ConversationHistoryResult } from "./types/Slack
 
 export type JoinChannelBody = { teamId: string; channelIds: string[] };
 export type PostTrendMessageBody = { teamId: string; channelIds: string[] };
+export type CountWeeklyTrendMessageBody = { teamId: string; channelIds: string[] };
+export type PostWeeklyTrendMessageBody = { teamId: string };
 export type SendFirstMessageBody = { teamId: string; userId: string };
 
 type TrendMessageType = {
@@ -98,10 +100,8 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   const trendMessages: TrendMessageWithLinkType[] = [];
 
   const maxPostNum = 3;
-  let postNum = 0;
-
   for (const message of sortedMessages) {
-    if (postNum > maxPostNum) {
+    if (trendMessages.length > maxPostNum) {
       break;
     }
 
@@ -124,8 +124,6 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
     })) as ChatGetPermalinkResult;
 
     trendMessages.push({ ...message, link: permalinkResult.permalink });
-
-    postNum += 1;
   }
 
   for (const [i, { link, reactions }] of trendMessages.entries()) {
@@ -156,7 +154,119 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   response.send();
 });
 
-export const sendFirstmessageTask = functions.https.onRequest(async (request, response) => {
+export const countWeeklyTrendMessageTask = functions.https.onRequest(async (request, response) => {
+  if (request.headers["x-cloudtasks-queuename"] !== Queue.CountWeeklyTrendMessage || request.method === "POST") {
+    response.status(400).send();
+    return;
+  }
+
+  logger.log(request.body);
+  const body: CountWeeklyTrendMessageBody = request.body;
+
+  const client = await SlackClient.new(body.teamId);
+  const {
+    web,
+    bot: { token },
+    slackOAuthData: { targetChannelId },
+  } = client;
+
+  if (!targetChannelId) {
+    response.send();
+    return;
+  }
+
+  const oldestTime = dayjs().subtract(1, "week").unix();
+  let messages: TrendMessageType[] = [];
+
+  for (const channelId of body.channelIds) {
+    const conversationHistoryResult = (await web.conversations.history({
+      token,
+      channel: channelId,
+      inclusive: true,
+      limit: 15000,
+      oldest: String(oldestTime),
+    })) as ConversationHistoryResult;
+
+    const formedMessages = conversationHistoryResult.messages.map((message) => ({
+      channelId,
+      ts: message.ts,
+      reactions: message.reactions ?? [],
+      reactionNum: message.reactions?.reduce((acc, reaction) => acc + reaction.count, 0) ?? 0,
+    }));
+    messages = messages.concat(formedMessages);
+  }
+
+  const maxCountNum = 5;
+  const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
+  const trendMessages = sortedMessages.slice(0, maxCountNum);
+
+  const weeklyTrendMessages = await client.getWeeklyTrendMessage();
+  weeklyTrendMessages.messages = weeklyTrendMessages.messages.concat(trendMessages);
+  await client.setWeeklyTrendMessage(weeklyTrendMessages);
+
+  response.send();
+});
+
+export const postWeeklyTrendMessageTask = functions.https.onRequest(async (request, response) => {
+  if (request.headers["x-cloudtasks-queuename"] !== Queue.PostWeeklyTrendMessage || request.method === "POST") {
+    response.status(400).send();
+    return;
+  }
+
+  logger.log(request.body);
+  const body: PostWeeklyTrendMessageBody = request.body;
+
+  const client = await SlackClient.new(body.teamId);
+  const {
+    web,
+    bot: { token },
+    slackOAuthData: { targetChannelId },
+  } = client;
+
+  if (!targetChannelId) {
+    response.send();
+    return;
+  }
+
+  const weeklyTrendMessages = await client.getWeeklyTrendMessage();
+  if (weeklyTrendMessages.messages.length === 0) {
+    response.send();
+    return;
+  }
+
+  const maxCountNum = 5;
+  const sortedMessages = weeklyTrendMessages.messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
+  const trendMessages = sortedMessages.slice(0, maxCountNum);
+
+  for (const [i, { channelId, ts, reactions }] of trendMessages.entries()) {
+    if (i === 0) {
+      await web.chat.postMessage({
+        channel: targetChannelId,
+        text: `:tada: 今週盛り上がった投稿はこちら！`,
+        token,
+      });
+    }
+
+    const { permalink } = (await web.chat.getPermalink({
+      token,
+      channel: channelId,
+      message_ts: ts,
+    })) as ChatGetPermalinkResult;
+
+    const reactionText = reactions.reduce((prev, current) => (prev += `:${current.name}: `.repeat(current.count)), "");
+    const text = `*${i + 1}位*\n${reactionText}\n${permalink}`;
+    await web.chat.postMessage({
+      channel: targetChannelId,
+      text,
+      token,
+    });
+  }
+
+  weeklyTrendMessages.messages = [];
+  await client.setWeeklyTrendMessage(weeklyTrendMessages);
+});
+
+export const sendFirstMessageTask = functions.https.onRequest(async (request, response) => {
   if (request.headers["x-cloudtasks-queuename"] !== Queue.SendFirstMessage) {
     response.status(400).send();
     return;

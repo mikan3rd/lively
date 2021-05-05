@@ -14,6 +14,9 @@ type Config = {
     location: string;
     base_url: string;
   };
+  test: {
+    team_id: string;
+  };
 };
 
 export const CONFIG = cloudFunctions.config() as Config;

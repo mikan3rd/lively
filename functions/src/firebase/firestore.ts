@@ -7,6 +7,7 @@ export const { FieldValue } = admin.firestore;
 export const SlackOAuthDB = db.collection("slackOAuth");
 export const SlackPostedTrendMessageDB = db.collection("slackPostedTrendMessage");
 export const SlackPostedRecommendChannelDB = db.collection("slackPostedRecommendChannelDB");
+export const SlackWeeklyTrendMessageDB = db.collection("slackWeeklyTrendMessage");
 
 export type TimeStamp = {
   updatedAt: FirebaseFirestore.Timestamp;
@@ -36,4 +37,18 @@ export type SlackPostedTrendMessage = {
 export type SlackPostedRecommendChannel = {
   teamId: string;
   postedChannelIds: string[];
+} & TimeStamp;
+
+export type SlackWeeklyTrendMessage = {
+  teamId: string;
+  messages: {
+    channelId: string;
+    ts: string;
+    reactions: {
+      name: string;
+      users: string[];
+      count: number;
+    }[];
+    reactionNum: number;
+  }[];
 } & TimeStamp;
