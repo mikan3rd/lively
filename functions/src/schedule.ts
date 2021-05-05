@@ -1,7 +1,6 @@
 import { PubSub } from "@google-cloud/pubsub";
 
 import { toBufferJson } from "./common/utils";
-import { CONFIG } from "./firebase/config";
 import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { scheduleFunctions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
@@ -31,7 +30,7 @@ export const batchWeeklyTrendMessageScheduler = scheduleFunctions()("0 9 * * mon
 
   const pubSub = new PubSub();
   for (const oauthData of oauthList) {
-    if (oauthData.installation.team.id !== CONFIG.test.team_id) {
+    if (!oauthData.targetChannelId) {
       continue;
     }
     await pubSub.topic(Topic.WeeklyTrendMessage).publish(toBufferJson(oauthData));
