@@ -32,3 +32,14 @@ export interface ChatGetPermalinkResult extends WebAPICallResult {
   channel: string;
   permalink: string;
 }
+
+export interface UsersInfoResult extends WebAPICallResult {
+  user: {
+    is_admin: boolean;
+    is_owner: boolean;
+    is_primary_owner: boolean;
+    is_restricted: boolean;
+    is_ultra_restricted: boolean;
+    is_bot: boolean;
+  };
+}

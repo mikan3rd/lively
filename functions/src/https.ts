@@ -174,7 +174,7 @@ export const sendFirstmessageTask = functions.https.onRequest(async (request, re
   if (body.userId) {
     await web.chat.postMessage({
       channel: body.userId,
-      text: `インストールありがとうございます！\n左上のタブのホームから初期設定をしましょう！`,
+      text: `インストールありがとうございます！\nホームタブから初期設定をしましょう！`,
       token,
     });
   }
