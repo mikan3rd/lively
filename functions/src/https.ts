@@ -90,18 +90,25 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
         reactions: message.reactions ?? [],
         reactionNum: message.reactions?.reduce((acc, reaction) => acc + reaction.count, 0) ?? 0,
       }))
-      .filter(({ reactionNum, channelId, ts }) => {
-        reactionNum >= selectedTrendNum &&
+      .filter(
+        ({ reactionNum, channelId, ts }) =>
+          reactionNum >= selectedTrendNum &&
           postedTrendMessages.messages.every(
-            (postedMessage) => postedMessage.channelId !== channelId && postedMessage.messageTs !== ts,
-          );
-      });
+            (postedMessage) => postedMessage.channelId !== channelId || postedMessage.messageTs !== ts,
+          ),
+      );
     messages = messages.concat(formedMessages);
   }
 
   const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
   const maxPostNum = 3;
   const trendMessages = sortedMessages.slice(0, maxPostNum);
+
+  if (trendMessages.length === 0) {
+    logger.debug("trendMessages is empty!!");
+    response.send();
+    return;
+  }
 
   for (const [i, { channelId, ts, reactions }] of trendMessages.entries()) {
     if (i === 0) {
