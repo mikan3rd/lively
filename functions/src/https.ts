@@ -232,7 +232,7 @@ export const postWeeklyTrendMessageTask = functions.https.onRequest(async (reque
     if (i === 0) {
       await web.chat.postMessage({
         channel: targetChannelId,
-        text: `:tada: 今週盛り上がった投稿はこちら！`,
+        text: `:tada: 先週盛り上がった投稿はこちら！`,
         token,
       });
     }
