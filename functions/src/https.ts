@@ -232,7 +232,7 @@ export const postWeeklyTrendMessageTask = functions.https.onRequest(async (reque
     if (i === 0) {
       await web.chat.postMessage({
         channel: targetChannelId,
-        text: `:tada: 先週盛り上がった投稿はこちら！`,
+        text: `:tada: 先週盛り上がった投稿ベスト5はこちら！`,
         token,
       });
     }
@@ -244,7 +244,7 @@ export const postWeeklyTrendMessageTask = functions.https.onRequest(async (reque
     })) as ChatGetPermalinkResult;
 
     const reactionText = reactions.reduce((prev, current) => (prev += `:${current.name}: `.repeat(current.count)), "");
-    const text = `*${i + 1}位*\n${reactionText}\n${permalink}`;
+    const text = `${reactionText}\n${permalink}`;
     await web.chat.postMessage({
       channel: targetChannelId,
       text,
