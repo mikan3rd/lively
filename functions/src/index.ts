@@ -2,6 +2,8 @@ import dayjs from "dayjs";
 import admin from "firebase-admin";
 import "dayjs/locale/ja";
 
+process.env.TZ = "Asia/Tokyo";
+
 dayjs.locale("ja");
 
 admin.initializeApp();
