@@ -19,27 +19,27 @@
     "node-forge": "0.10.0"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "2.11.0",
-    "@google-cloud/tasks": "2.3.0",
+    "@google-cloud/pubsub": "2.12.0",
+    "@google-cloud/tasks": "2.3.1",
     "@slack/events-api": "3.0.0",
     "@slack/interactive-messages": "2.0.1",
     "@slack/oauth": "2.0.1",
-    "@slack/web-api": "6.1.0",
+    "@slack/web-api": "6.2.3",
     "dayjs": "1.10.4",
-    "firebase-admin": "9.7.0",
-    "firebase-functions": "3.13.2"
+    "firebase-admin": "9.8.0",
+    "firebase-functions": "3.14.1"
   },
   "devDependencies": {
-    "@types/node": "14.14.44",
-    "@typescript-eslint/eslint-plugin": "4.22.1",
-    "@typescript-eslint/parser": "4.22.1",
+    "@types/node": "14.14.45",
+    "@typescript-eslint/eslint-plugin": "4.24.0",
+    "@typescript-eslint/parser": "4.24.0",
     "eslint": "7.26.0",
     "eslint-config-prettier": "8.3.0",
-    "eslint-plugin-import": "2.22.1",
+    "eslint-plugin-import": "2.23.2",
     "eslint-plugin-prettier": "3.4.0",
     "firebase-functions-test": "0.2.3",
-    "firebase-tools": "9.10.2",
-    "prettier": "2.2.1",
+    "firebase-tools": "9.11.0",
+    "prettier": "2.3.0",
     "typescript": "4.2.4"
   },
   "private": true

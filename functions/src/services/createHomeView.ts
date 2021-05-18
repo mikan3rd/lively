@@ -11,8 +11,7 @@ export const createHomeView = (slackOAuthData: SlackOAuth) => {
     type: "section",
     text: {
       type: "mrkdwn",
-      text:
-        "【必須】botと連携するチャンネルを設定してください\n\n連携したチャンネルのみ人気のメッセージをチェックできます",
+      text: "【必須】botと連携するチャンネルを設定してください\n\n連携したチャンネルのみ人気のメッセージをチェックできます",
     },
   };
 
