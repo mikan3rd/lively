@@ -1,6 +1,7 @@
 import { PubSub } from "@google-cloud/pubsub";
 
 import { toBufferJson } from "./common/utils";
+import { CONFIG } from "./firebase/config";
 import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { scheduleFunctions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
@@ -50,5 +51,18 @@ export const batchRecommendChannelScheduler = scheduleFunctions()("0 8 * * mon")
       continue;
     }
     await pubSub.topic(Topic.RecommendChannel).publish(toBufferJson(oauthData));
+  }
+});
+
+export const batchDeletePostedTrendMessageScheduler = scheduleFunctions()("0 1 1 * *").onRun(async (context) => {
+  const docs = await SlackOAuthDB.get();
+  const oauthList: SlackOAuth[] = [];
+  docs.forEach((doc) => {
+    oauthList.push(doc.data() as SlackOAuth);
+  });
+
+  const pubSub = new PubSub();
+  for (const oauthData of oauthList) {
+    await pubSub.topic(Topic.DeletePostedTrendMessage).publish(toBufferJson(oauthData));
   }
 });
