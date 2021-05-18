@@ -52,3 +52,16 @@ export const batchRecommendChannelScheduler = scheduleFunctions()("0 8 * * mon")
     await pubSub.topic(Topic.RecommendChannel).publish(toBufferJson(oauthData));
   }
 });
+
+export const batchDeletePostedTrendMessageScheduler = scheduleFunctions()("0 1 1 * *").onRun(async (context) => {
+  const docs = await SlackOAuthDB.get();
+  const oauthList: SlackOAuth[] = [];
+  docs.forEach((doc) => {
+    oauthList.push(doc.data() as SlackOAuth);
+  });
+
+  const pubSub = new PubSub();
+  for (const oauthData of oauthList) {
+    await pubSub.topic(Topic.DeletePostedTrendMessage).publish(toBufferJson(oauthData));
+  }
+});

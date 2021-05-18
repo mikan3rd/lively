@@ -202,3 +202,21 @@ export const postRecommendChannelPubSub = functions.pubsub.topic(Topic.Recommend
   postedChannelIds.push(targetChannel.id);
   await client.setPostedRecommendChannelIds({ teamId: team.id, postedChannelIds });
 });
+
+export const deletePostedTrendMessagePubSub = functions.pubsub
+  .topic(Topic.DeletePostedTrendMessage)
+  .onPublish(async (message) => {
+    const {
+      installation: { team },
+    }: SlackOAuth = message.json;
+
+    const client = await SlackClient.new(team.id);
+
+    const postedTrendMessages = await client.getPostedTrendMessage();
+
+    const filterTime = dayjs().subtract(2, "month").unix();
+    postedTrendMessages.messages = postedTrendMessages.messages.filter(
+      (message) => Number(message.messageTs) > filterTime,
+    );
+    await client.setPostedTrendMessage(postedTrendMessages);
+  });
