@@ -30,15 +30,16 @@ export const joinChannelTask = functions.https.onRequest(async (request, respons
     return;
   }
 
-  const body: JoinChannelBody = request.body;
+  const { channelIds, teamId }: JoinChannelBody = request.body;
 
-  const client = await SlackClient.new(body.teamId);
+  const client = await SlackClient.new(teamId);
   const {
     web,
     bot: { token },
     slackOAuthData: { isAllPublicChannel },
   } = client;
-  for (const channelId of body.channelIds) {
+
+  for (const channelId of channelIds) {
     await web.conversations.join({ token, channel: channelId }).catch((e) => logger.error(e));
   }
 
@@ -105,7 +106,6 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   const trendMessages = sortedMessages.slice(0, maxPostNum);
 
   if (trendMessages.length === 0) {
-    logger.debug("trendMessages is empty!!");
     response.send();
     return;
   }
