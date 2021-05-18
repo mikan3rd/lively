@@ -1,7 +1,6 @@
 import { PubSub } from "@google-cloud/pubsub";
 
 import { toBufferJson } from "./common/utils";
-import { CONFIG } from "./firebase/config";
 import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { scheduleFunctions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
