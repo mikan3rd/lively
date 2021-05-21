@@ -7,7 +7,13 @@ import { SlackOAuth } from "./firebase/firestore";
 import { functions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
 import { Queue } from "./firebase/task";
-import { CountWeeklyTrendMessageBody, PostTrendMessageBody, PostWeeklyTrendMessageBody } from "./https";
+import {
+  CountMonthlyTrendMessageBody,
+  CountWeeklyTrendMessageBody,
+  PostMonthlyTrendMessageBody,
+  PostTrendMessageBody,
+  PostWeeklyTrendMessageBody,
+} from "./https";
 import { getConversationsList } from "./services/getConversationsList";
 import { Action } from "./slack/actionIds";
 import { SlackClient } from "./slack/client";
@@ -130,6 +136,80 @@ export const postWeeklyTrendMessagePubSub = functions.pubsub
           headers: { "Content-Type": "application/json" },
           httpMethod: "POST",
           url: `${CONFIG.cloud_task.base_url}/postWeeklyTrendMessageTask`,
+          body: toBase64(body),
+        },
+      },
+    });
+  });
+
+export const postMonthlyTrendMessagePubSub = functions.pubsub
+  .topic(Topic.MonthlyTrendMessage)
+  .onPublish(async (message) => {
+    const {
+      installation: { team },
+    }: SlackOAuth = message.json;
+
+    const client = await SlackClient.new(team.id);
+    const {
+      slackOAuthData: { targetChannelId },
+    } = client;
+
+    if (!targetChannelId) {
+      return;
+    }
+
+    const { channels } = await getConversationsList(client);
+    const sortedChannels = channels.sort((a, b) => (a.num_members > b.num_members ? -1 : 1));
+    const channelIds = sortedChannels.filter((channel) => channel.is_member).map((channel) => channel.id);
+
+    if (channelIds.length === 0) {
+      return;
+    }
+
+    const bulkChannelIds = chunk(channelIds, BulkHistoryThreshold);
+    const tasksClient = new CloudTasksClient();
+    const interval = 3;
+    for (const [index, channelIds] of bulkChannelIds.entries()) {
+      const body: CountMonthlyTrendMessageBody = { teamId: team.id, channelIds };
+      await tasksClient.createTask({
+        parent: tasksClient.queuePath(
+          CONFIG.cloud_task.project,
+          CONFIG.cloud_task.location,
+          Queue.CountMonthlyTrendMessage,
+        ),
+        task: {
+          scheduleTime: {
+            seconds: dayjs()
+              .add(index * interval, "minute")
+              .unix(),
+          },
+          httpRequest: {
+            headers: { "Content-Type": "application/json" },
+            httpMethod: "POST",
+            url: `${CONFIG.cloud_task.base_url}/countMonthlyTrendMessageTask`,
+            body: toBase64(body),
+          },
+        },
+      });
+    }
+
+    const body: PostMonthlyTrendMessageBody = { teamId: team.id };
+    await tasksClient.createTask({
+      parent: tasksClient.queuePath(
+        CONFIG.cloud_task.project,
+        CONFIG.cloud_task.location,
+        Queue.PostMonthlyTrendMessage,
+      ),
+      task: {
+        scheduleTime: {
+          seconds: dayjs()
+            .add(bulkChannelIds.length * interval, "minute")
+            .unix(),
+        },
+        httpRequest: {
+          headers: { "Content-Type": "application/json" },
+          httpMethod: "POST",
+          url: `${CONFIG.cloud_task.base_url}/postMonthlyTrendMessageTask`,
           body: toBase64(body),
         },
       },

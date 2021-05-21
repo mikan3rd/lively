@@ -1,6 +1,7 @@
 import { PubSub } from "@google-cloud/pubsub";
 
 import { toBufferJson } from "./common/utils";
+import { CONFIG } from "./firebase/config";
 import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { scheduleFunctions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
@@ -21,7 +22,7 @@ export const batchTrendMessageQueueScheduler = scheduleFunctions()("0 * * * *").
   }
 });
 
-export const batchWeeklyTrendMessageScheduler = scheduleFunctions()("0 9 * * mon").onRun(async (context) => {
+export const batchWeeklyTrendMessageScheduler = scheduleFunctions()("0 8 * * mon").onRun(async (context) => {
   const docs = await SlackOAuthDB.get();
   const oauthList: SlackOAuth[] = [];
   docs.forEach((doc) => {
@@ -37,7 +38,25 @@ export const batchWeeklyTrendMessageScheduler = scheduleFunctions()("0 9 * * mon
   }
 });
 
-export const batchRecommendChannelScheduler = scheduleFunctions()("0 8 * * mon").onRun(async (context) => {
+export const batchMonthlyTrendMessageScheduler = scheduleFunctions()("0 9 1 * *").onRun(async (context) => {
+  const docs = await SlackOAuthDB.get();
+  const oauthList: SlackOAuth[] = [];
+  docs.forEach((doc) => {
+    oauthList.push(doc.data() as SlackOAuth);
+  });
+
+  const pubSub = new PubSub();
+  for (const oauthData of oauthList) {
+    if (!oauthData.targetChannelId) {
+      continue;
+    }
+    if (CONFIG.test.team_id === oauthData.installation.team.id) {
+      await pubSub.topic(Topic.MonthlyTrendMessage).publish(toBufferJson(oauthData));
+    }
+  }
+});
+
+export const batchRecommendChannelScheduler = scheduleFunctions()("0 12 * * mon").onRun(async (context) => {
   const docs = await SlackOAuthDB.get();
   const oauthList: SlackOAuth[] = [];
   docs.forEach((doc) => {
