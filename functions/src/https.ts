@@ -10,7 +10,9 @@ import { ChatGetPermalinkResult, ConversationHistoryResult } from "./types/Slack
 export type JoinChannelBody = { teamId: string; channelIds: string[] };
 export type PostTrendMessageBody = { teamId: string; channelIds: string[] };
 export type CountWeeklyTrendMessageBody = { teamId: string; channelIds: string[] };
+export type CountMonthlyTrendMessageBody = { teamId: string; channelIds: string[] };
 export type PostWeeklyTrendMessageBody = { teamId: string };
+export type PostMonthlyTrendMessageBody = { teamId: string };
 export type SendFirstMessageBody = { teamId: string; userId: string };
 
 type TrendMessageType = {
@@ -23,6 +25,10 @@ type TrendMessageType = {
   }[];
   reactionNum: number;
 };
+
+const HourlyMaxCount = 3;
+const WeeklyMaxCount = 3;
+const MonthlyMaxCount = 5;
 
 export const joinChannelTask = functions.https.onRequest(async (request, response) => {
   if (request.headers["x-cloudtasks-queuename"] !== Queue.JoinChannel) {
@@ -102,8 +108,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   }
 
   const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
-  const maxPostNum = 3;
-  const trendMessages = sortedMessages.slice(0, maxPostNum);
+  const trendMessages = sortedMessages.slice(0, HourlyMaxCount);
 
   if (trendMessages.length === 0) {
     response.send();
@@ -187,9 +192,8 @@ export const countWeeklyTrendMessageTask = functions.https.onRequest(async (requ
     messages = messages.concat(formedMessages);
   }
 
-  const maxCountNum = 5;
   const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
-  const trendMessages = sortedMessages.slice(0, maxCountNum);
+  const trendMessages = sortedMessages.slice(0, WeeklyMaxCount);
 
   const weeklyTrendMessages = await client.getWeeklyTrendMessage();
   weeklyTrendMessages.messages = weeklyTrendMessages.messages.concat(trendMessages);
@@ -224,15 +228,14 @@ export const postWeeklyTrendMessageTask = functions.https.onRequest(async (reque
     return;
   }
 
-  const maxCountNum = 5;
   const sortedMessages = weeklyTrendMessages.messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
-  const trendMessages = sortedMessages.slice(0, maxCountNum);
+  const trendMessages = sortedMessages.slice(0, WeeklyMaxCount);
 
   for (const [i, { channelId, ts, reactions }] of trendMessages.entries()) {
     if (i === 0) {
       await web.chat.postMessage({
         channel: targetChannelId,
-        text: `:tada: 先週盛り上がった投稿ベスト5はこちら！`,
+        text: `:tada: 先週盛り上がった投稿ベスト${WeeklyMaxCount}はこちら！`,
         token,
       });
     }
@@ -254,6 +257,116 @@ export const postWeeklyTrendMessageTask = functions.https.onRequest(async (reque
 
   weeklyTrendMessages.messages = [];
   await client.setWeeklyTrendMessage(weeklyTrendMessages);
+});
+
+export const countMonthlyTrendMessageTask = functions.https.onRequest(async (request, response) => {
+  if (request.headers["x-cloudtasks-queuename"] !== Queue.CountMonthlyTrendMessage || request.method !== "POST") {
+    response.status(400).send();
+    return;
+  }
+
+  const body: CountMonthlyTrendMessageBody = request.body;
+
+  const client = await SlackClient.new(body.teamId);
+  const {
+    web,
+    bot: { token },
+    slackOAuthData: { targetChannelId },
+  } = client;
+
+  if (!targetChannelId) {
+    response.send();
+    return;
+  }
+
+  const oldestTime = dayjs().subtract(1, "month").unix();
+  let messages: TrendMessageType[] = [];
+
+  for (const channelId of body.channelIds) {
+    const conversationHistoryResult = (await web.conversations.history({
+      token,
+      channel: channelId,
+      inclusive: true,
+      limit: 50000,
+      oldest: String(oldestTime),
+    })) as ConversationHistoryResult;
+
+    const formedMessages = conversationHistoryResult.messages
+      .map((message) => ({
+        channelId,
+        ts: message.ts,
+        reactions: message.reactions ?? [],
+        reactionNum: message.reactions?.reduce((acc, reaction) => acc + reaction.count, 0) ?? 0,
+      }))
+      .filter((message) => message.reactionNum > 0);
+    messages = messages.concat(formedMessages);
+  }
+
+  const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
+  const trendMessages = sortedMessages.slice(0, MonthlyMaxCount);
+
+  const monthlyTrendMessages = await client.getMonthlyTrendMessage();
+  monthlyTrendMessages.messages = monthlyTrendMessages.messages.concat(trendMessages);
+  await client.setMonthlyTrendMessage(monthlyTrendMessages);
+
+  response.send();
+});
+
+export const postMonthlyTrendMessageTask = functions.https.onRequest(async (request, response) => {
+  if (request.headers["x-cloudtasks-queuename"] !== Queue.PostMonthlyTrendMessage || request.method !== "POST") {
+    response.status(400).send();
+    return;
+  }
+
+  const body: PostMonthlyTrendMessageBody = request.body;
+
+  const client = await SlackClient.new(body.teamId);
+  const {
+    web,
+    bot: { token },
+    slackOAuthData: { targetChannelId },
+  } = client;
+
+  if (!targetChannelId) {
+    response.send();
+    return;
+  }
+
+  const monthlyTrendMessages = await client.getMonthlyTrendMessage();
+  if (monthlyTrendMessages.messages.length === 0) {
+    response.send();
+    return;
+  }
+
+  const sortedMessages = monthlyTrendMessages.messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
+  const trendMessages = sortedMessages.slice(0, MonthlyMaxCount);
+
+  for (const [i, { channelId, ts, reactions }] of trendMessages.entries()) {
+    if (i === 0) {
+      await web.chat.postMessage({
+        channel: targetChannelId,
+        text: `:tada: 先月盛り上がった投稿ベスト${MonthlyMaxCount}はこちら！`,
+        token,
+      });
+    }
+
+    const { permalink } = (await web.chat.getPermalink({
+      token,
+      channel: channelId,
+      message_ts: ts,
+    })) as ChatGetPermalinkResult;
+
+    const reactionText = reactions.reduce((prev, current) => (prev += `:${current.name}: `.repeat(current.count)), "");
+    const text = `${reactionText}\n${permalink}`;
+    await web.chat.postMessage({
+      channel: targetChannelId,
+      text,
+      token,
+    });
+  }
+
+  monthlyTrendMessages.messages = [];
+  await client.setMonthlyTrendMessage(monthlyTrendMessages);
 });
 
 export const sendFirstMessageTask = functions.https.onRequest(async (request, response) => {

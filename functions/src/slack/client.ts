@@ -3,6 +3,8 @@ import { WebClient } from "@slack/web-api";
 import {
   FieldValue,
   FirestoreParams,
+  SlackMonthlyTrendMessage,
+  SlackMonthlyTrendMessageDB,
   SlackOAuth,
   SlackOAuthDB,
   SlackPostedRecommendChannel,
@@ -34,6 +36,7 @@ export class SlackClient {
   slackPostedTrendMessage?: PartiallyPartial<SlackPostedTrendMessage, keyof TimeStamp>;
   slackPostedRecommendChannelIds?: PartiallyPartial<SlackPostedRecommendChannel, keyof TimeStamp>;
   slackWeeklyTrendMessage?: PartiallyPartial<SlackWeeklyTrendMessage, keyof TimeStamp>;
+  slackMonthlyTrendMessage?: PartiallyPartial<SlackMonthlyTrendMessage, keyof TimeStamp>;
 
   constructor({ slackOAuthData, web, bot }: Constructor) {
     this.slackOAuthData = slackOAuthData;
@@ -141,6 +144,27 @@ export class SlackClient {
       data = doc.data() as SlackWeeklyTrendMessage;
     }
     this.slackWeeklyTrendMessage = data;
+    return data;
+  }
+
+  async setMonthlyTrendMessage(data: FirestoreParams<SlackMonthlyTrendMessage>) {
+    data.updatedAt = FieldValue.serverTimestamp();
+    if (!this.slackMonthlyTrendMessage?.createdAt) {
+      data.createdAt = FieldValue.serverTimestamp();
+    }
+    await SlackMonthlyTrendMessageDB.doc(this.teamId).set(data, { merge: true });
+  }
+
+  async getMonthlyTrendMessage() {
+    const doc = await SlackMonthlyTrendMessageDB.doc(this.teamId).get();
+    let data: PartiallyPartial<SlackMonthlyTrendMessage, keyof TimeStamp> = {
+      teamId: this.teamId,
+      messages: [],
+    };
+    if (doc.exists) {
+      data = doc.data() as SlackMonthlyTrendMessage;
+    }
+    this.slackMonthlyTrendMessage = data;
     return data;
   }
 
