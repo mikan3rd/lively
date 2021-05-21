@@ -26,7 +26,7 @@ type TrendMessageType = {
   reactionNum: number;
 };
 
-const HourlyMaxCOunt = 3;
+const HourlyMaxCount = 3;
 const WeeklyMaxCount = 3;
 const MonthlyMaxCount = 5;
 
@@ -108,7 +108,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   }
 
   const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
-  const trendMessages = sortedMessages.slice(0, HourlyMaxCOunt);
+  const trendMessages = sortedMessages.slice(0, HourlyMaxCount);
 
   if (trendMessages.length === 0) {
     response.send();
@@ -305,9 +305,9 @@ export const countMonthlyTrendMessageTask = functions.https.onRequest(async (req
   const sortedMessages = messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
   const trendMessages = sortedMessages.slice(0, MonthlyMaxCount);
 
-  const weeklyTrendMessages = await client.getWeeklyTrendMessage();
-  weeklyTrendMessages.messages = weeklyTrendMessages.messages.concat(trendMessages);
-  await client.setWeeklyTrendMessage(weeklyTrendMessages);
+  const monthlyTrendMessages = await client.getMonthlyTrendMessage();
+  monthlyTrendMessages.messages = monthlyTrendMessages.messages.concat(trendMessages);
+  await client.setMonthlyTrendMessage(monthlyTrendMessages);
 
   response.send();
 });
@@ -332,13 +332,13 @@ export const postMonthlyTrendMessageTask = functions.https.onRequest(async (requ
     return;
   }
 
-  const weeklyTrendMessages = await client.getWeeklyTrendMessage();
-  if (weeklyTrendMessages.messages.length === 0) {
+  const monthlyTrendMessages = await client.getMonthlyTrendMessage();
+  if (monthlyTrendMessages.messages.length === 0) {
     response.send();
     return;
   }
 
-  const sortedMessages = weeklyTrendMessages.messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
+  const sortedMessages = monthlyTrendMessages.messages.sort((a, b) => (a.reactionNum > b.reactionNum ? -1 : 1));
   const trendMessages = sortedMessages.slice(0, MonthlyMaxCount);
 
   for (const [i, { channelId, ts, reactions }] of trendMessages.entries()) {
@@ -365,8 +365,8 @@ export const postMonthlyTrendMessageTask = functions.https.onRequest(async (requ
     });
   }
 
-  weeklyTrendMessages.messages = [];
-  await client.setWeeklyTrendMessage(weeklyTrendMessages);
+  monthlyTrendMessages.messages = [];
+  await client.setMonthlyTrendMessage(monthlyTrendMessages);
 });
 
 export const sendFirstMessageTask = functions.https.onRequest(async (request, response) => {
