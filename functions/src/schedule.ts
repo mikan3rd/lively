@@ -1,7 +1,6 @@
 import { PubSub } from "@google-cloud/pubsub";
 
 import { toBufferJson } from "./common/utils";
-import { CONFIG } from "./firebase/config";
 import { SlackOAuth, SlackOAuthDB } from "./firebase/firestore";
 import { scheduleFunctions } from "./firebase/functions";
 import { Topic } from "./firebase/pubsub";
@@ -50,9 +49,7 @@ export const batchMonthlyTrendMessageScheduler = scheduleFunctions()("0 9 1 * *"
     if (!oauthData.targetChannelId) {
       continue;
     }
-    if (CONFIG.test.team_id === oauthData.installation.team.id) {
-      await pubSub.topic(Topic.MonthlyTrendMessage).publish(toBufferJson(oauthData));
-    }
+    await pubSub.topic(Topic.MonthlyTrendMessage).publish(toBufferJson(oauthData));
   }
 });
 
