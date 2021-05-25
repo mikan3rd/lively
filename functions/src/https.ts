@@ -26,7 +26,7 @@ type TrendMessageType = {
   reactionNum: number;
 };
 
-const HourlyMaxCount = 3;
+const HourlyMaxCount = 2;
 const WeeklyMaxCount = 3;
 const MonthlyMaxCount = 5;
 
