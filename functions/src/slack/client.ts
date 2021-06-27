@@ -82,6 +82,9 @@ export class SlackClient {
   async deleteAll() {
     await SlackOAuthDB.doc(this.teamId).delete();
     await SlackPostedTrendMessageDB.doc(this.teamId).delete();
+    await SlackPostedRecommendChannelDB.doc(this.teamId).delete();
+    await SlackWeeklyTrendMessageDB.doc(this.teamId).delete();
+    await SlackMonthlyTrendMessageDB.doc(this.teamId).delete();
   }
 
   async setPostedTrendMessage(data: FirestoreParams<SlackPostedTrendMessage>) {
