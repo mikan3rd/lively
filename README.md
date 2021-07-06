@@ -4,7 +4,7 @@
 
 ## Install
 
-[App Directory Page](https://zenkigen.slack.com/apps/A0239EZ6A5S-lively2)
+[App Directory Page](https://slack.com/apps/A0239EZ6A5S)
 
 <a href="https://asia-northeast1-lively-82e58.cloudfunctions.net/slackOAuthUrl" target="_blank"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcSet="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>
 
