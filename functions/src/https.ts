@@ -26,7 +26,7 @@ type TrendMessageType = {
   reactionNum: number;
 };
 
-const HourlyMaxCount = 2;
+const HourlyMaxCount = 1;
 const WeeklyMaxCount = 3;
 const MonthlyMaxCount = 5;
 
@@ -131,7 +131,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
     })) as ChatGetPermalinkResult;
 
     const reactionText = reactions.reduce((prev, current) => (prev += `:${current.name}: `.repeat(current.count)), "");
-    const text = `${reactionText}\n${permalink}`;
+    const text = `:tada: <#${channelId}> が盛り上がってるよ！\n${reactionText}\n${permalink}`;
     await web.chat.postMessage({
       channel: targetChannelId,
       text,
