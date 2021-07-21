@@ -116,14 +116,6 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
   }
 
   for (const [i, { channelId, ts, reactions }] of trendMessages.entries()) {
-    if (i === 0) {
-      await web.chat.postMessage({
-        channel: targetChannelId,
-        text: `:tada: この投稿が盛り上がってるよ！`,
-        token,
-      });
-    }
-
     const { permalink } = (await web.chat.getPermalink({
       token,
       channel: channelId,
