@@ -115,7 +115,7 @@ export const postTrendMessageTask = functions.https.onRequest(async (request, re
     return;
   }
 
-  for (const [i, { channelId, ts, reactions }] of trendMessages.entries()) {
+  for (const { channelId, ts, reactions } of trendMessages) {
     const { permalink } = (await web.chat.getPermalink({
       token,
       channel: channelId,
