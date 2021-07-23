@@ -19,8 +19,8 @@
     "node-forge": "0.10.0"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "2.16.0",
-    "@google-cloud/tasks": "2.3.5",
+    "@google-cloud/pubsub": "2.16.1",
+    "@google-cloud/tasks": "2.3.6",
     "@slack/events-api": "3.0.1",
     "@slack/interactive-messages": "2.0.2",
     "@slack/oauth": "2.2.0",
@@ -31,9 +31,9 @@
   },
   "devDependencies": {
     "@types/node": "14.17.5",
-    "@typescript-eslint/eslint-plugin": "4.28.3",
-    "@typescript-eslint/parser": "4.28.3",
-    "eslint": "7.30.0",
+    "@typescript-eslint/eslint-plugin": "4.28.4",
+    "@typescript-eslint/parser": "4.28.4",
+    "eslint": "7.31.0",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-import": "2.23.4",
     "eslint-plugin-prettier": "3.4.0",
