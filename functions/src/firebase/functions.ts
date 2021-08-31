@@ -9,4 +9,4 @@ export const scheduleFunctions =
   (schedule: string) =>
     functions.runWith(runtimeOptions).pubsub.schedule(schedule).timeZone(TIMEZONE).retryConfig({ retryCount: 1 });
 
-export { logger } from "firebase-functions/lib";
+export { logger } from "firebase-functions";
