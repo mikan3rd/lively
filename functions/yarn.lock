@@ -206,10 +206,10 @@
     stream-events "^1.0.1"
     xdg-basedir "^4.0.0"
 
-"@google-cloud/tasks@2.4.1":
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/@google-cloud/tasks/-/tasks-2.4.1.tgz#bc6e51e59d79fcbe0abe774af073fa33ec282209"
-  integrity sha512-G4PTeISuXSJWiJYCKPl/WV904mNCRo6gLy6c6LU6aIylwAw2uvIrvUDSa0BGbE8/biC2svmQrpbro1paiJDwIg==
+"@google-cloud/tasks@2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@google-cloud/tasks/-/tasks-2.4.2.tgz#2fc0240983a74c7008f58aacd68ea7dc165e16c0"
+  integrity sha512-DTIO6/Hyo/F67xfMoN5tpFR+xFeeDVC/DX30OkxtgvgJHwZf56QFJmzQcSF4wIbhwWVp7rMKjP2R+ku4MtEj+Q==
   dependencies:
     google-gax "^2.24.1"
 
