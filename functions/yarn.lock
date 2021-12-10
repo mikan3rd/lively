@@ -186,10 +186,10 @@
   resolved "https://registry.yarnpkg.com/@google-cloud/promisify/-/promisify-2.0.3.tgz#f934b5cdc939e3c7039ff62b9caaf59a9d89e3a8"
   integrity sha512-d4VSA86eL/AFTe5xtyZX+ePUjE8dIFu2T8zmdeNBSa5/kNgXPCx/o/wbFNHAGLJdGnk1vddRuMESD9HbOC8irw==
 
-"@google-cloud/pubsub@2.18.3":
-  version "2.18.3"
-  resolved "https://registry.yarnpkg.com/@google-cloud/pubsub/-/pubsub-2.18.3.tgz#5d0809d599476fb596852dbb96063dd9a5108c7f"
-  integrity sha512-0wVJ2msv+UKFMeSf6duvvKBdOkm6GSzgCrL6Rme6FIf0HbJgc08l3QBuBJWXMSspQKyPuXp0oXTpo8iVadP5Ow==
+"@google-cloud/pubsub@2.18.4":
+  version "2.18.4"
+  resolved "https://registry.yarnpkg.com/@google-cloud/pubsub/-/pubsub-2.18.4.tgz#41b56cd428d51c6a699b7515af86d9c22ea94a4a"
+  integrity sha512-mgKZ7XdXN7MEGK+MCmRKuoq3GBiuYIa9ytYuV1DIHbd+eYqqyPYZHvL8g/73eogkNYK5TxSydja7TCRDzfJaxA==
   dependencies:
     "@google-cloud/paginator" "^3.0.0"
     "@google-cloud/precise-date" "^2.0.0"
@@ -202,7 +202,7 @@
     arrify "^2.0.0"
     extend "^3.0.2"
     google-auth-library "^7.0.0"
-    google-gax "2.25.3"
+    google-gax "2.28.1"
     is-stream-ended "^0.1.4"
     lodash.snakecase "^4.1.1"
     p-defer "^3.0.0"
@@ -253,10 +253,10 @@
     stream-events "^1.0.1"
     xdg-basedir "^4.0.0"
 
-"@google-cloud/tasks@2.4.2":
-  version "2.4.2"
-  resolved "https://registry.yarnpkg.com/@google-cloud/tasks/-/tasks-2.4.2.tgz#2fc0240983a74c7008f58aacd68ea7dc165e16c0"
-  integrity sha512-DTIO6/Hyo/F67xfMoN5tpFR+xFeeDVC/DX30OkxtgvgJHwZf56QFJmzQcSF4wIbhwWVp7rMKjP2R+ku4MtEj+Q==
+"@google-cloud/tasks@2.5.0":
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/tasks/-/tasks-2.5.0.tgz#e6c2598038001550c408845e91570d176c18a25a"
+  integrity sha512-3hhsLccb8OUI5/0Bg0VNt88XXYHhbKHiBt2n81VNjmwhZXHaKaBzq13l7NGcuOTkjl5hWLXPWDsctAu4m7dKVQ==
   dependencies:
     google-gax "^2.24.1"
 
@@ -267,10 +267,29 @@
   dependencies:
     "@types/node" ">=12.12.47"
 
+"@grpc/grpc-js@~1.4.0":
+  version "1.4.4"
+  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.4.4.tgz#59336f13d77bc446bbdf2161564a32639288dc5b"
+  integrity sha512-a6222b7Dl6fIlMgzVl7e+NiRoLiZFbpcwvBH2Oli56Bn7W4/3Ld+86hK4ffPn5rx2DlDidmIcvIJiOQXyhv9gA==
+  dependencies:
+    "@grpc/proto-loader" "^0.6.4"
+    "@types/node" ">=12.12.47"
+
 "@grpc/proto-loader@^0.6.1":
   version "0.6.4"
   resolved "https://registry.yarnpkg.com/@grpc/proto-loader/-/proto-loader-0.6.4.tgz#5438c0d771e92274e77e631babdc14456441cbdc"
   integrity sha512-7xvDvW/vJEcmLUltCUGOgWRPM8Oofv0eCFSVMuKqaqWJaXSzmB+m9hiyqe34QofAl4WAzIKUZZlinIF9FOHyTQ==
+  dependencies:
+    "@types/long" "^4.0.1"
+    lodash.camelcase "^4.3.0"
+    long "^4.0.0"
+    protobufjs "^6.10.0"
+    yargs "^16.1.1"
+
+"@grpc/proto-loader@^0.6.4":
+  version "0.6.7"
+  resolved "https://registry.yarnpkg.com/@grpc/proto-loader/-/proto-loader-0.6.7.tgz#e62a202f4cf5897bdd0e244dec1dbc80d84bdfa1"
+  integrity sha512-QzTPIyJxU0u+r2qGe8VMl3j/W2ryhEvBv7hc42OjYfthSj370fUrb7na65rG6w3YLZS/fb8p89iTBobfWGDgdw==
   dependencies:
     "@types/long" "^4.0.1"
     lodash.camelcase "^4.3.0"
@@ -2654,10 +2673,10 @@ firebase-functions@3.16.0:
     express "^4.17.1"
     lodash "^4.17.14"
 
-firebase-tools@9.23.0:
-  version "9.23.0"
-  resolved "https://registry.yarnpkg.com/firebase-tools/-/firebase-tools-9.23.0.tgz#d69efa48b075fb34b496f98b628c4285ba84e856"
-  integrity sha512-m5Yj8EBk6kyLktSV0qgvjjjjxZpp6p/ujDH5c6wQpq3dcH3LquK9D4gjmz7XJtfd7F5ww0XkjWsXra5mHcg5Iw==
+firebase-tools@9.23.1:
+  version "9.23.1"
+  resolved "https://registry.yarnpkg.com/firebase-tools/-/firebase-tools-9.23.1.tgz#fff2690e4b073866ca37e0db0630fa6212800f17"
+  integrity sha512-voBcfApvEyyuFGFg0ypmtSldFLtifDquxix1htLHll6PFvmSzBOCz+1U4manzOnoUMBcy8cVNhNNgDgcErzgHQ==
   dependencies:
     "@google-cloud/pubsub" "^2.7.0"
     "@types/archiver" "^5.1.0"
@@ -3066,12 +3085,12 @@ google-auth-library@^7.0.0, google-auth-library@^7.0.2, google-auth-library@^7.6
     jws "^4.0.0"
     lru-cache "^6.0.0"
 
-google-gax@2.25.3:
-  version "2.25.3"
-  resolved "https://registry.yarnpkg.com/google-gax/-/google-gax-2.25.3.tgz#c74867a62ecca76db3919107f12e75fddf7dc52c"
-  integrity sha512-E9d8DuVM8cALQr3YFmcMqPWi3ZzaWPME06IHO0BfZvE40wWThsBhhpiGKAy38Qk6nR5Ezpvz46PqsOVVYqMAMQ==
+google-gax@2.28.1:
+  version "2.28.1"
+  resolved "https://registry.yarnpkg.com/google-gax/-/google-gax-2.28.1.tgz#99bc234b5769d901d70959d40bd1651729eb4a34"
+  integrity sha512-2Xjd3FrjlVd6Cmw2B2Aicpc/q92SwTpIOvxPUlnRg9w+Do8nu7UR+eQrgoKlo2FIUcUuDTvppvcx8toND0pK9g==
   dependencies:
-    "@grpc/grpc-js" "~1.3.0"
+    "@grpc/grpc-js" "~1.4.0"
     "@grpc/proto-loader" "^0.6.1"
     "@types/long" "^4.0.0"
     abort-controller "^3.0.0"
@@ -3081,7 +3100,7 @@ google-gax@2.25.3:
     is-stream-ended "^0.1.4"
     node-fetch "^2.6.1"
     object-hash "^2.1.1"
-    proto3-json-serializer "^0.1.1"
+    proto3-json-serializer "^0.1.5"
     protobufjs "6.11.2"
     retry-request "^4.0.0"
 
@@ -4886,10 +4905,10 @@ prettier-linter-helpers@^1.0.0:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier@2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.5.0.tgz#a6370e2d4594e093270419d9cc47f7670488f893"
-  integrity sha512-FM/zAKgWTxj40rH03VxzIPdXmj39SwSjwG0heUcNFwI+EMZJnY93yAiKXM3dObIKAM5TA88werc8T/EwhB45eg==
+prettier@2.5.1:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.5.1.tgz#fff75fa9d519c54cf0fce328c1017d94546bc56a"
+  integrity sha512-vBZcPRUR5MZJwoyi3ZoyQlc1rXeEck8KgeC9AwwOn+exuxLxq5toTRDTSaVrXHxelDMHy9zlicw8u66yxoSUFg==
 
 printj@~1.1.0:
   version "1.1.2"
@@ -4934,7 +4953,14 @@ proto3-json-serializer@^0.1.1:
   resolved "https://registry.yarnpkg.com/proto3-json-serializer/-/proto3-json-serializer-0.1.3.tgz#3b4d5f481dbb923dd88e259ed03b0629abc9a8e7"
   integrity sha512-X0DAtxCBsy1NDn84huVFGOFgBslT2gBmM+85nY6/5SOAaCon1jzVNdvi74foIyFvs5CjtSbQsepsM5TsyNhqQw==
 
-protobufjs@6.11.2, protobufjs@^6.10.0, protobufjs@^6.8.6:
+proto3-json-serializer@^0.1.5:
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/proto3-json-serializer/-/proto3-json-serializer-0.1.6.tgz#67cf3b8d5f4c8bebfc410698ad3b1ed64da39c7b"
+  integrity sha512-tGbV6m6Kad8NqxMh5hw87euPS0YoZSAOIfvR01zYkQV8Gpx1V/8yU/0gCKCvfCkhAJsjvzzhnnsdQxA1w7PSog==
+  dependencies:
+    protobufjs "^6.11.2"
+
+protobufjs@6.11.2, protobufjs@^6.10.0, protobufjs@^6.11.2, protobufjs@^6.8.6:
   version "6.11.2"
   resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-6.11.2.tgz#de39fabd4ed32beaa08e9bb1e30d08544c1edf8b"
   integrity sha512-4BQJoPooKJl2G9j3XftkIXjoC9C0Av2NOrWmbLWT1vH32GcSUHjM0Arra6UfTsVyfMAuFzaLucXn1sadxJydAw==
@@ -5999,10 +6025,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@4.5.2:
-  version "4.5.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.5.2.tgz#8ac1fba9f52256fdb06fb89e4122fa6a346c2998"
-  integrity sha512-5BlMof9H1yGt0P8/WF+wPNw6GfctgGjXp5hkblpyT+8rkASSmkUKMXrxR0Xg8ThVCi/JnHQiKXeBaEwCeQwMFw==
+typescript@4.5.3:
+  version "4.5.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.5.3.tgz#afaa858e68c7103317d89eb90c5d8906268d353c"
+  integrity sha512-eVYaEHALSt+s9LbvgEv4Ef+Tdq7hBiIZgii12xXJnukryt3pMgJf6aKhoCZ3FWQsu6sydEnkg11fYXLzhLBjeQ==
 
 unbox-primitive@^1.0.1:
   version "1.0.1"
