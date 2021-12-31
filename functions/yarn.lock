@@ -709,10 +709,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.7.8.tgz#2448be5f24fe6b77114632b6350fcd219334651e"
   integrity sha512-8upnoQU0OPzbIkm+ZMM0zCeFCkw2s3mS0IWdx0+AAaWqm4fkBb0UJp8Edl7FVKRamYbpJC/aVsHpKWBIbiC7Zg==
 
-"@types/node@14.18.2":
-  version "14.18.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.2.tgz#00fe4d1686d5f6cf3a2f2e9a0eef42594d06abfc"
-  integrity sha512-fqtSN5xn/bBzDxMT77C1rJg6CsH/R49E7qsGuvdPJa20HtV5zSTuLJPNfnlyVH3wauKnkHdLggTVkOW/xP9oQg==
+"@types/node@14.18.3":
+  version "14.18.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.3.tgz#b3682cfd9d5542b025df13233d073cb4347f63f3"
+  integrity sha512-GtTH2crF4MtOIrrAa+jgTV9JX/PfoUCYr6MiZw7O/dkZu5b6gm5dc1nAL0jwGo4ortSBBtGyeVaxdC8X6V+pLg==
 
 "@types/node@>=12.13.0 < 13":
   version "12.20.21"
