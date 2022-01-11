@@ -16,7 +16,7 @@
   },
   "main": "lib/index.js",
   "resolutions": {
-    "node-forge": "0.10.0"
+    "node-forge": "1.2.1"
   },
   "dependencies": {
     "@google-cloud/pubsub": "2.18.4",
