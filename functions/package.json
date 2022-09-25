@@ -12,7 +12,7 @@
     "emulators": "firebase emulators:start"
   },
   "engines": {
-    "node": "14"
+    "node": "16"
   },
   "main": "lib/index.js",
   "resolutions": {
@@ -30,7 +30,7 @@
     "firebase-functions": "3.16.0"
   },
   "devDependencies": {
-    "@types/node": "14.18.3",
+    "@types/node": "16.11.60",
     "@typescript-eslint/eslint-plugin": "4.33.0",
     "@typescript-eslint/parser": "4.33.0",
     "eslint": "7.32.0",
