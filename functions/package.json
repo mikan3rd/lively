@@ -12,7 +12,7 @@
     "emulators": "firebase emulators:start"
   },
   "engines": {
-    "node": "14"
+    "node": "24"
   },
   "main": "lib/index.js",
   "resolutions": {
